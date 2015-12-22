@@ -61,6 +61,7 @@
 #' fully recomputing a truncated SVD. Use these options to tune \code{p} for a balance between
 #' the matrix-vector product work and pruning efficiency.
 #'
+#' @seealso \code{\link{cor}}
 #' @examples
 #' # Construct a 100 x 5,000 example matrix A:
 #' set.seed(1)

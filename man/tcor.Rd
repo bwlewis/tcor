@@ -110,4 +110,7 @@ x <- tcor(A, t=0.98)  # Compare x$indices with i.
 }
 
 }
+\seealso{
+\code{\link{cor}}
+}
 
