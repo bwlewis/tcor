@@ -11,8 +11,7 @@ Authors@R: c(
     )
 URL: https://github.com/bwlewis/tcor
 BugReports: https://github.com/bwlewis/tcor/issues
-Description: Fast and memory efficient computation of thresholded correlation
-    and distance matrices
+Description: Fast and memory efficient computation of thresholded correlation matrices.
 Imports:
     irlba (>= 2.0.0),
     stats,

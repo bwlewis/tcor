@@ -50,7 +50,7 @@
 #' to run in parallel, otherwise it runs sequentially.
 #' When \code{A} is large, use \code{filter=local} to avoid copying A on the
 #' parallel R worker processes (unless the \code{doMC} parallel backend is used with
-#' \code{\link{foreack}}).
+#' \code{\link{foreach}}).
 #'
 #' Specify \code{dry_run=TRUE} to compute and return a truncated SVD of rank \code{p},
 #' the number of \code{n*p} matrix vector products required by the full algorithm, and a lower-bound
@@ -63,7 +63,7 @@
 #' # Construct a 100 x 5,000 example matrix A:
 #' set.seed(1)
 #' s <- svd(matrix(rnorm(100 * 5000), nrow=100))
-#' A <- s$u %*% (1/(1:100) * t(s%v)) 
+#' A <- s$u %*% (1/(1:100) * t(s$v)) 
 #'
 #' C <- cor(A)
 #' C <- C*upper.tri(C)
@@ -80,7 +80,7 @@
 #' x1 <- tcor(A, t=0.98, p=10, dry_run=TRUE, restart=x1)
 #' # 7,   even better...
 #'
-#' Once tuned, compute the full thresholded correlation:
+#' # Once tuned, compute the full thresholded correlation:
 #' x <- tcor(A, t=0.98, p=10, restart=x1)
 #'
 #' \dontrun{
