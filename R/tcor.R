@@ -1,7 +1,7 @@
 #' Compute the thresholded correlations between columns of a matrix.
 #'
 #' Increase \code{p} to cut down the total number of candidate pairs evaluated,
-#' at the expense of costlier truncated SVDs. See the notes on tuning \code{p}.
+#' at the expense of costlier matrix-vector products. See the notes on tuning \code{p}.
 #'
 #' @param A an m by n real-valued dense or sparse matrix
 #' @param t a threshold value for correlation, -1 < t < 1, but usually t is near 1 (the method only finds highly correlated pairs)
@@ -23,7 +23,8 @@
 #'         the third column contains the corresponding correlation value.
 #'   \item \code{longest_run} The largest number of successive entries in the
 #'     ordered first singular vector within a projected distance defined by the
-#'     correlation threshold.
+#'     correlation threshold. This is the main number of \code{n * p} matrix-vector
+#'     products required by the algorithm.
 #'   \item \code{n} The total number of _candidate_ vectors that met
 #'     the correlation threshold identified by the algorithm, subsequently filtered
 #'     down to just those indices corresponding to values meeting the threshold.
@@ -37,14 +38,15 @@
 #'   the \code{irlba} algorithm.
 #'   \item \code{longest_run} The largest number of successive entries in the
 #'     ordered first singular vector within a projected distance defined by the
-#'     correlation threshold.
+#'     correlation threshold. This is the main number of \code{n * p} matrix-vector
+#'     products required by the algorithm.
 #'   \item \code{n} A cheap lower-bound estimate of the total number of _candidate_ vectors that met
 #'     the correlation threshold identified by the algorithm, subsequently filtered
 #'     down to just those indices corresponding to values meeting the threshold.
 #'   \item \code{svd_time} Time spent computing truncated SVD.
 #' }
 #'
-#' @note Register a parallel backend with \coode{\link{foreach}} before invoking \code{\link{tcor}}
+#' @note Register a parallel backend with \code{\link{foreach}} before invoking \code{\link{tcor}}
 #' to run in parallel, otherwise it runs sequentially.
 #' When \code{A} is large, use \code{filter=local} to avoid copying A on the
 #' parallel R worker processes (unless the \code{doMC} parallel backend is used with
@@ -56,6 +58,37 @@
 #' can pass the returned value back in as input using the \code{restart} parameter to avoid
 #' fully recomputing a truncated SVD. Use these options to tune \code{p} for a balance between
 #' the matrix-vector product work and pruning efficiency.
+#'
+#' @examples
+#' # Construct a 100 x 5,000 example matrix A:
+#' set.seed(1)
+#' s <- svd(matrix(rnorm(100 * 5000), nrow=100))
+#' A <- s$u %*% (1/(1:100) * t(s%v)) 
+#'
+#' C <- cor(A)
+#' C <- C*upper.tri(C)
+#' i <- which(C >= 0.98, arr.ind=TRUE)
+#'
+#' x <- tcor(A, t=0.98)  # Compare x$indices with i.
+#'
+#' # Example of tuning p with dry_run=TRUE:
+#' x1 <- tcor(A, t=0.98, p=3, dry_run=TRUE)
+#' print(x1$n)
+#' # 456, see how much we can reduce this without increasing p too much...
+#' x1 <- tcor(A, t=0.98, p=8, dry_run=TRUE, restart=x1)
+#' # 17,  much better...
+#' x1 <- tcor(A, t=0.98, p=10, dry_run=TRUE, restart=x1)
+#' # 7,   even better...
+#'
+#' Once tuned, compute the full thresholded correlation:
+#' x <- tcor(A, t=0.98, p=10, restart=x1)
+#'
+#' \dontrun{
+#' # Optionally, register a parallel backend first:
+#' library(doMC)
+#' registerDoMC()
+#' x <- tcor(A, t=0.98)  # Compare x$indices with i.
+#' }
 #'
 #' @importFrom irlba irlba
 #' @importFrom stats cor

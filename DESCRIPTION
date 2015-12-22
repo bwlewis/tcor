@@ -14,8 +14,8 @@ BugReports: https://github.com/bwlewis/tcor/issues
 Description: Fast and memory efficient computation of thresholded correlation
     and distance matrices
 Imports:
-    irlba,
+    irlba (>= 2.0.0),
     stats,
     foreach
 License: GPL
-RoxygenNote: 5.0.1
+RoxygenNote: 5.0.0
