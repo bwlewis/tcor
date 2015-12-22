@@ -15,7 +15,7 @@ longrun = function(v, limit)
       ell = max(ell, upper - lower + 1)
     } else
     {
-      while(lower < upper && v[upper] - v[lower] > limit) lower = lower + 1
+      while (lower < upper && v[upper] - v[lower] > limit) lower = lower + 1
     }
   }
   ell
@@ -52,7 +52,7 @@ two_seven = function(A, L, t, filter=c("distributed", "local"), normlim=2 * (1 -
   })
   ellmin = which.min(vapply(ells, function(x) x$ell, 1))
   P = ells[[ellmin]]$P
-  limit = ells[[ellmin]]$limit
+
   ell = min(ells[[ellmin]]$ell, ncol(A) - 1)
 
   if(dry_run)
@@ -69,6 +69,11 @@ two_seven = function(A, L, t, filter=c("distributed", "local"), normlim=2 * (1 -
   {
     list(indices=rbind(x$indices, y$indices), n=x$n + y$n)
   }
+
+# codetools has trouble detecting the foreach variable i below. We define
+# it here to supress CRAN NOTEs and lintr warnings (this is really either
+# a problem in foreach or codetools).
+  i = 1
 
   if(filter == "distributed")
   {
