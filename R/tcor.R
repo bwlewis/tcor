@@ -1,0 +1,83 @@
+#' Compute the thresholded correlations between columns of a matrix.
+#'
+#' Increase \code{p} to cut down the total number of candidate pairs evaluated,
+#' at the expense of costlier truncated SVDs. See the notes on tuning \code{p}.
+#'
+#' @param A an m by n real-valued dense or sparse matrix
+#' @param t a threshold value for correlation, -1 < t < 1, but usually t is near 1 (the method only finds highly correlated pairs)
+#' @param p projected subspace dimension, p << n (if p >= n it will be reduced)
+#' @param filter "local" filters candidate set sequentially,
+#'  "distributed" computes thresholded correlations in a parallel code section which can be
+#'  faster but requires that the data matrix is available (see notes).
+#' @param dry_run set \code{TRUE} to return statistics and truncated SVD for tuning
+#' \code{p} (see notes)
+#' @param restart either output from a previous run of \code{tcor} with \code{dry_run=TRUE},
+#' or direct output from from \code{\link{irlba}} used to restart the \code{irlba}
+#' algorithm when tuning \code{p} (see notes)
+#' @param ... additional arguments passed to \code{\link{irlba}}
+#'
+#' @return If \code{dry_run=FALSE}, return a list with elements:
+#' \enumerate{
+#'   \item \code{indices} A three-column matrix. The first two columns contain
+#'         indices of vectors meeting the correlation threshold \code{t},
+#'         the third column contains the corresponding correlation value.
+#'   \item \code{longest_run} The largest number of successive entries in the
+#'     ordered first singular vector within a projected distance defined by the
+#'     correlation threshold.
+#'   \item \code{n} The total number of _candidate_ vectors that met
+#'     the correlation threshold identified by the algorithm, subsequently filtered
+#'     down to just those indices corresponding to values meeting the threshold.
+#'   \item \code{svd_time} Time spent computing truncated SVD.
+#'   \item \code{total_time} Total run time.
+#' }
+#'
+#' When \code{dry_RUN=TRUE}, a list with elements:
+#' \enumerate{
+#'   \item \code{restart} The truncated SVD from \code{\link{irlba}}, used to restart
+#'   the \code{irlba} algorithm.
+#'   \item \code{longest_run} The largest number of successive entries in the
+#'     ordered first singular vector within a projected distance defined by the
+#'     correlation threshold.
+#'   \item \code{n} A cheap lower-bound estimate of the total number of _candidate_ vectors that met
+#'     the correlation threshold identified by the algorithm, subsequently filtered
+#'     down to just those indices corresponding to values meeting the threshold.
+#'   \item \code{svd_time} Time spent computing truncated SVD.
+#' }
+#'
+#' @note Register a parallel backend with \coode{\link{foreach}} before invoking \code{\link{tcor}}
+#' to run in parallel, otherwise it runs sequentially.
+#' When \code{A} is large, use \code{filter=local} to avoid copying A on the
+#' parallel R worker processes (unless the \code{doMC} parallel backend is used with
+#' \code{\link{foreack}}).
+#'
+#' Specify \code{dry_run=TRUE} to compute and return a truncated SVD of rank \code{p},
+#' the number of \code{n*p} matrix vector products required by the full algorithm, and a lower-bound
+#' estimate on the number of unpruned candidate vector pairs to be evaluated by the algorithm. You
+#' can pass the returned value back in as input using the \code{restart} parameter to avoid
+#' fully recomputing a truncated SVD. Use these options to tune \code{p} for a balance between
+#' the matrix-vector product work and pruning efficiency.
+#'
+#' @importFrom irlba irlba
+#' @importFrom stats cor
+#' @export
+tcor = function(A, t=0.99, p=10, filter=c("distributed", "local"), dry_run=FALSE, restart, ...)
+{
+  filter = match.arg(filter)
+  if(ncol(A) < p) p = max(1, floor(ncol(A) / 2 - 1))
+  t0 = proc.time()
+  mu = colMeans(A)
+  s  = sqrt(apply(A, 2, crossprod) - nrow(A) * mu ^ 2) # col norms of centered matrix
+  if(any(s < 10 * .Machine$double.eps)) stop("the standard deviation is zero for some columns")
+  if(missing(restart)) L  = irlba(A, p, center=mu, scale=s, ...)
+  else
+  {
+    # Handle either output from tcor(..., dry_run=TRUE), or direct output from irlba:
+    if("restart" %in% names(restart)) restart = restart$restart
+    L = irlba(A, p, center=mu, scale=s, v=restart, ...)
+  }
+  t1 = (proc.time() - t0)[[3]]
+
+  ans = two_seven(A, L, t, filter, dry_run=dry_run) # steps 2--7 of algorithm 2.1
+  if(dry_run) return(list(restart=L, longest_run=ans$longest_run, n=ans$n, svd_time=t1))
+  c(ans, svd_time=t1, total_time=(proc.time() - t0)[[3]])
+}

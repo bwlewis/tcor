@@ -1,0 +1,21 @@
+Package: tcor
+Type: Package
+Title: Fast Thresholded Correlation and Distance Matrices
+Version: 0.0.0
+Date: 2015-11-27
+Authors@R: c(
+    person("B. W.", "Lewis", role=c("cre","aut"), email="blewis@illposed.net"),
+    person("James", "Baglama", role=c("aut"), email="jbaglama@math.uri.edu"),
+    person("Michael", "Kane", role=c("aut"), email="michael.kane@yale.edu"),
+    person("Alex", "Poliakov", role=c("aut"), email="apoliakov@paradigm4.com")
+    )
+URL: https://github.com/bwlewis/tcor
+BugReports: https://github.com/bwlewis/tcor/issues
+Description: Fast and memory efficient computation of thresholded correlation
+    and distance matrices
+Imports:
+    irlba,
+    stats,
+    foreach
+License: GPL
+RoxygenNote: 5.0.1
