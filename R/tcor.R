@@ -1,6 +1,8 @@
 #' Compute the thresholded correlations between columns of a matrix.
 #'
-#' Increase \code{p} to cut down the total number of candidate pairs evaluated,
+#' Compute a thresholded correlation matrix, returning vector indices
+#' and correlation values that exceed the specified threshold \code{t}.
+#' Increase \code{p} to cut down the total number of candidate pairs evaluated
 #' at the expense of costlier matrix-vector products. See the notes on tuning \code{p}.
 #'
 #' @param A an m by n real-valued dense or sparse matrix
