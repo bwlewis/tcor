@@ -58,7 +58,7 @@ two_seven = function(A, L, t, filter=c("distributed", "local"), normlim=2 * (1 -
   if(dry_run)
   {
     d = diff(L$v[P, 1:p, drop=FALSE], lag=1) ^ 2 %*% L$d[1:p] ^ 2
-    return(list(longest_run=ell, n=sum(d <= normlim)))
+    return(list(longest_run=ell, n=sum(d <= normlim), t=t))
   }
 
 # The big union in step 4 of algorithm 2.1 follows, combined with step 6 to
@@ -96,9 +96,9 @@ two_seven = function(A, L, t, filter=c("distributed", "local"), normlim=2 * (1 -
       h = filter_fun(v, t)
       j = j[h]
       v = v[h]
-      return(list(indices=cbind(i=P[j], j=P[j + i], val=v), n=n))
+      list(indices=cbind(i=P[j], j=P[j + i], val=v), n=n)
     }
-    return(c(indices, longest_run=ell))
+    return(c(indices, longest_run=ell, t=t))
   }
 
 # filter == "local" case, preventing copy of the data matrix to the workers
@@ -122,5 +122,5 @@ two_seven = function(A, L, t, filter=c("distributed", "local"), normlim=2 * (1 -
   v = full_dist_fun(indices$indices)
   h = filter_fun(v, t)
   indices$indices = cbind(indices$indices[h,], val=v[h])
-  c(indices, longest_run=ell)
+  c(indices, longest_run=ell, t=t)
 }

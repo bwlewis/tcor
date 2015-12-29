@@ -35,16 +35,17 @@ If \code{dry_run=FALSE}, return a list with elements:
         the third column contains the corresponding correlation value.
   \item \code{longest_run} The largest number of successive entries in the
     ordered first singular vector within a projected distance defined by the
-    correlation threshold. This is the main number of \code{n * p} matrix-vector
+    correlation threshold. This is the minimum number of \code{n * p} matrix-vector
     products required by the algorithm.
   \item \code{n} The total number of _candidate_ vectors that met
     the correlation threshold identified by the algorithm, subsequently filtered
     down to just those indices corresponding to values meeting the threshold.
+  \item \code{t} The threshold value.
   \item \code{svd_time} Time spent computing truncated SVD.
   \item \code{total_time} Total run time.
 }
 
-When \code{dry_RUN=TRUE}, a list with elements:
+When \code{dry_RUN=TRUE}, return a list with elements:
 \enumerate{
   \item \code{restart} The truncated SVD from \code{\link{irlba}}, used to restart
   the \code{irlba} algorithm.
@@ -55,6 +56,7 @@ When \code{dry_RUN=TRUE}, a list with elements:
   \item \code{n} A cheap lower-bound estimate of the total number of _candidate_ vectors that met
     the correlation threshold identified by the algorithm, subsequently filtered
     down to just those indices corresponding to values meeting the threshold.
+  \item \code{t} The threshold value.
   \item \code{svd_time} Time spent computing truncated SVD.
 }
 }
@@ -72,7 +74,7 @@ parallel R worker processes (unless the \code{doMC} parallel backend is used wit
 \code{\link{foreach}}).
 
 Specify \code{dry_run=TRUE} to compute and return a truncated SVD of rank \code{p},
-the number of \code{n*p} matrix vector products required by the full algorithm, and a lower-bound
+a lower bound on the number of \code{n*p} matrix vector products required by the full algorithm, and a lower-bound
 estimate on the number of unpruned candidate vector pairs to be evaluated by the algorithm. You
 can pass the returned value back in as input using the \code{restart} parameter to avoid
 fully recomputing a truncated SVD. Use these options to tune \code{p} for a balance between
@@ -111,6 +113,6 @@ x <- tcor(A, t=0.98)  # Compare x$indices with i.
 
 }
 \seealso{
-\code{\link{cor}}
+\code{\link{cor}}, \code{\link{irlba}}
 }
 

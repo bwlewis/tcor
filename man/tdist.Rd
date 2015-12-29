@@ -4,14 +4,13 @@
 \alias{tdist}
 \title{Thresholded distances between columns of a matrix.}
 \usage{
-tdist(A, t = min(sqrt(apply(A, 2, crossprod))), p = 10,
-  filter = c("distributed", "local"), method = c("euclidean", "manhattan"),
-  ...)
+tdist(A, t, p = 10, filter = c("distributed", "local"),
+  method = c("euclidean", "manhattan"), dry_run = FALSE, restart, ...)
 }
 \arguments{
 \item{A}{an m by n real-valued dense or sparse matrix}
 
-\item{t}{a threshold distance value}
+\item{t}{a threshold distance value, if missing an estimate derived from a 1-d SVD projection will be used}
 
 \item{p}{projected subspace dimension}
 
@@ -22,6 +21,13 @@ faster but requires that the data matrix is available (see notes).}
 \item{method}{the distance measure to be used, one of
          "euclidean", or "manhattan".
 Any unambiguous substring can be given.}
+
+\item{dry_run}{set \code{TRUE} to return statistics and truncated SVD for tuning
+\code{p} (see notes)}
+
+\item{restart}{either output from a previous run of \code{tdist} with \code{dry_run=TRUE},
+or direct output from from \code{\link{irlba}} used to restart the \code{irlba}
+algorithm when tuning \code{p} (see notes)}
 
 \item{...}{additional arguments passed to \code{\link{irlba}}}
 }

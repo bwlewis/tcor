@@ -1,7 +1,8 @@
 # tcor
 An R package for fast and memory-efficient computation of thresholded correlation matrices
 
-A preprint of the companion paper is available here: http://arxiv.org/abs/1512.07246
+A preprint of the companion note is available from http://arxiv.org/abs/1512.07246
+(a version of this article has been submitted to the Journal of Statistical Software).
 
 
 ## Installation

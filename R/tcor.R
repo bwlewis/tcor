@@ -25,16 +25,17 @@
 #'         the third column contains the corresponding correlation value.
 #'   \item \code{longest_run} The largest number of successive entries in the
 #'     ordered first singular vector within a projected distance defined by the
-#'     correlation threshold. This is the main number of \code{n * p} matrix-vector
+#'     correlation threshold. This is the minimum number of \code{n * p} matrix-vector
 #'     products required by the algorithm.
 #'   \item \code{n} The total number of _candidate_ vectors that met
 #'     the correlation threshold identified by the algorithm, subsequently filtered
 #'     down to just those indices corresponding to values meeting the threshold.
+#'   \item \code{t} The threshold value.
 #'   \item \code{svd_time} Time spent computing truncated SVD.
 #'   \item \code{total_time} Total run time.
 #' }
 #'
-#' When \code{dry_RUN=TRUE}, a list with elements:
+#' When \code{dry_RUN=TRUE}, return a list with elements:
 #' \enumerate{
 #'   \item \code{restart} The truncated SVD from \code{\link{irlba}}, used to restart
 #'   the \code{irlba} algorithm.
@@ -45,6 +46,7 @@
 #'   \item \code{n} A cheap lower-bound estimate of the total number of _candidate_ vectors that met
 #'     the correlation threshold identified by the algorithm, subsequently filtered
 #'     down to just those indices corresponding to values meeting the threshold.
+#'   \item \code{t} The threshold value.
 #'   \item \code{svd_time} Time spent computing truncated SVD.
 #' }
 #'
@@ -55,7 +57,7 @@
 #' \code{\link{foreach}}).
 #'
 #' Specify \code{dry_run=TRUE} to compute and return a truncated SVD of rank \code{p},
-#' the number of \code{n*p} matrix vector products required by the full algorithm, and a lower-bound
+#' a lower bound on the number of \code{n*p} matrix vector products required by the full algorithm, and a lower-bound
 #' estimate on the number of unpruned candidate vector pairs to be evaluated by the algorithm. You
 #' can pass the returned value back in as input using the \code{restart} parameter to avoid
 #' fully recomputing a truncated SVD. Use these options to tune \code{p} for a balance between
@@ -114,6 +116,6 @@ tcor = function(A, t=0.99, p=10, filter=c("distributed", "local"), dry_run=FALSE
   t1 = (proc.time() - t0)[[3]]
 
   ans = two_seven(A, L, t, filter, dry_run=dry_run) # steps 2--7 of algorithm 2.1
-  if(dry_run) return(list(restart=L, longest_run=ans$longest_run, n=ans$n, svd_time=t1))
+  if(dry_run) return(list(restart=L, longest_run=ans$longest_run, n=ans$n, t=t, svd_time=t1))
   c(ans, svd_time=t1, total_time=(proc.time() - t0)[[3]])
 }
