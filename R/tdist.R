@@ -1,6 +1,6 @@
-#' Thresholded distances between rows of a matrix.
+#' Compute thresholded distances between rows or columns of a matrix
 #'
-#' Compute and return distances and indices of rows within a specified distance threshold
+#' Compute and return distances and indices of rows or columns within a specified distance threshold
 #' with respect to a specified distance metric. The algorithm works best for Euclidean
 #' distance (the default option).
 #' Alternatively compute the \code{t} closest rows when \code{rank=TRUE}. Or use

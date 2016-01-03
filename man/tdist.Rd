@@ -2,7 +2,7 @@
 % Please edit documentation in R/tdist.R
 \name{tdist}
 \alias{tdist}
-\title{Thresholded distances between rows of a matrix.}
+\title{Compute thresholded distances between rows or columns of a matrix}
 \usage{
 tdist(A, t, p = 10, filter = c("distributed", "local"),
   method = c("euclidean", "manhattan", "maximum"), rank = FALSE,
@@ -64,7 +64,7 @@ A list with elements:
 }
 }
 \description{
-Compute and return distances and indices of rows within a specified distance threshold
+Compute and return distances and indices of rows or columns within a specified distance threshold
 with respect to a specified distance metric. The algorithm works best for Euclidean
 distance (the default option).
 Alternatively compute the \code{t} closest rows when \code{rank=TRUE}. Or use

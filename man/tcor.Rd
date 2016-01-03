@@ -2,7 +2,7 @@
 % Please edit documentation in R/tcor.R
 \name{tcor}
 \alias{tcor}
-\title{Compute the thresholded correlations between columns of a matrix.}
+\title{Compute the thresholded correlations between columns of a matrix}
 \usage{
 tcor(A, t = 0.99, p = 10, filter = c("distributed", "local"),
   dry_run = FALSE, rank = FALSE, max_iter = 4, restart, ...)

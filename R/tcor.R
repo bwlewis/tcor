@@ -1,4 +1,4 @@
-#' Compute the thresholded correlations between columns of a matrix.
+#' Compute the thresholded correlations between columns of a matrix
 #'
 #' Compute a thresholded correlation matrix, returning vector indices
 #' and correlation values that exceed the specified threshold \code{t}.
