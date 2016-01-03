@@ -2,16 +2,15 @@
 #'
 #' Unlike the \code{\link{dist}} function which computes
 #' distances between matrix _rows_, \code{tdist} computes distances
-#' exceeding a threshold between matrix _columns_.
+#' exceeding a threshold between matrix _columns_ (similarly to the related
+#' \code{\link{tcor}} function).
 #'
 #' Increase p to cut down the total number of candidate pairs evaluated,
 #' at the expense of costlier truncated SVDs.
 #'
-#' This function doesn't work as well generally yet as the \code{\link{tcor}}
-#' companion function in this package.
-#'
 #' @param A an m by n real-valued dense or sparse matrix
-#' @param t a threshold distance value, if missing an estimate derived from a 1-d SVD projection will be used
+#' @param t a threshold distance value either in absolute distance (the default) or rank order (see \code{rank} below);
+#' if missing an estimate derived from a 1-d SVD projection will be used
 #' @param p projected subspace dimension
 #' @param filter "local" filters candidate set sequentially,
 #'  "distributed" computes thresholded correlations in a parallel code section which can be
@@ -19,32 +18,47 @@
 #' @param method the distance measure to be used, one of
 #'          "euclidean", or "manhattan".
 #' Any unambiguous substring can be given.
+#' @param rank when \code{TRUE}, the threshold \code{t} represents the top \code{t}
+#' closest vectors, otherwise the threshold \code{t} specifies absolute distance; when
+#' \code{rank=TRUE} then \code{t} must also be specified
 #' @param dry_run set \code{TRUE} to return statistics and truncated SVD for tuning
 #' \code{p} (see notes)
 #' @param restart either output from a previous run of \code{tdist} with \code{dry_run=TRUE},
 #' or direct output from from \code{\link{irlba}} used to restart the \code{irlba}
 #' algorithm when tuning \code{p} (see notes)
+#' @param max_iter when \code{rank=TRUE}, a portion of the algorithm may iterate; this
+#' number sets the maximum numer of such iterations
 #' @param ... additional arguments passed to \code{\link{irlba}}
 #'
 #' @return A list with elements:
 #' \enumerate{
 #'   \item \code{indices} A three-column matrix. The  first two columns contain
 #'         indices of vectors meeting the distance threshold \code{t},
-#'         the third column contains the corresponding distance value.
-#'   \item \code{longest_run} The largest number of successive entries in the
-#'     ordered first singular vector within a projected distance defined by the
-#'     correlation threshold.
+#'         the third column contains the corresponding distance value (not returned
+#'         when \code{dry_run=TRUE}).
+#'   \item \code{restart} A truncated SVD returned by the IRLBA used to restart the
+#'   algorithm (only returned when \code{dry_run=TRUE}).
 #'   \item \code{n} The total number of _possible_ vectors that meet
 #'     the correlation threshold identified by the algorithm.
+#'   \item \code{longest_run} The largest number of successive entries in the
+#'     ordered first singular vector within a projected distance defined by the
+#'     correlation threshold; Equivalently, the number of \code{n * p} matrix
+#'     vector products employed in the algorithm, not counting the truncated SVD step.
+#'   \item \code{t} The threshold value.
+#'   \item \code{svd_time} Time to compute truncated SVD.
 #'   \item \code{total_time} Total run time.
 #' }
+#'
+#' @note When \code{rank=TRUE} the method returns at least the top \code{t} closest
+#' indices and their distances and possibly more, unless they could not be found within the iteration
+#' limit \code{max_iter}.
 #' @importFrom irlba irlba
 #' @importFrom stats dist
 #' @export
 tdist = function(A, t, p=10,
                  filter=c("distributed", "local"),
-                 method=c("euclidean", "manhattan"),
-                 dry_run=FALSE, restart, t_est, ...)
+                 method=c("euclidean", "manhattan", "maximum"), rank=FALSE,
+                 dry_run=FALSE, restart, max_iter=4, ...)
 {
   filter = match.arg(filter)
   method = match.arg(method)
@@ -58,19 +72,19 @@ tdist = function(A, t, p=10,
     L = irlba(A, p, v=restart, ...)
   }
   t1 = (proc.time() - t0)[[3]]
-  if(missing(t))
+  if(missing(t) && rank) stop("t must be specified when rank=TRUE")
+  N = 1
+  if(rank) N = t
+  if(missing(t) || rank)
   {
-    # Estimate a threshold based on a 1-d projection
-# XXX improve me
+    # Estimate a threshold based on central 10% of the data in a 1-d projection
     v = L$v[order(L$v[,1]), 1]
-    if(missing(t_est)) t_est = 0.01
-    t = quantile(L$d[1] * (v - v[1]), probs=t_est)
+    t = quantile(L$d[1] * (v - v[1]), probs=0.55) - quantile(L$d[1] * (v - v[1]), probs=0.45)
+    attr(t, "names") = c()
+    if(rank && method == "maximum") t = t / 4    # just a fudge factor, these bounds are not great
+    if(rank && method == "manhattan") t = t * 4
   }
 
-  normlim = switch(method,
-                   euclidean = t ^ 2,
-                   maximum = nrow(A) * t ^ 2,  # XXX unlikely to be a good bound improve? XXX
-                   manhattan   = t ^ 2)        # just bound by 2-norm
   full_dist_fun =
     switch(method,
            euclidean = function(idx) vapply(1:nrow(idx), function(k) sqrt(crossprod(A[, idx[k,1]] - A[, idx[k, 2]])), 1),
@@ -79,7 +93,20 @@ tdist = function(A, t, p=10,
   )
   filter_fun =  function(v, t) v <= t
 
-  ans = two_seven(A, L, t, filter, normlim=normlim, full_dist_fun=full_dist_fun, filter_fun=filter_fun, dry_run=dry_run)
-  if(dry_run) return(list(restart=L, longest_run=ans$longest_run, n=ans$n, t=t, svd_time=t1))
-  return(c(ans, svd_time=t1, total_time=(proc.time() - t0)[[3]]))
+  iter = 1
+  while(iter <= max_iter)
+  {
+    normlim = switch(method,
+                   euclidean = t ^ 2,
+                   maximum = nrow(A) * t ^ 2,  # XXX unlikely to be a good bound?
+                   manhattan   = t ^ 2)        # just bound by 2-norm, not so great either
+    ans = two_seven(A, L, t, filter, normlim=normlim, full_dist_fun=full_dist_fun, filter_fun=filter_fun, dry_run=dry_run)
+    if(dry_run) return(list(restart=L, longest_run=ans$longest_run, n=ans$n, t=t, svd_time=t1))
+    if(!rank || (nrow(ans$indices) >= N)) break
+    iter = iter + 1
+# back off faster as we get closer to avoid too much filtering, at the expense of maybe more iterations
+    t = t * (2 - (nrow(ans$indices)/N)^(1/4)) 
+  }
+  ans$indices = ans$indices[order(ans$indices[,"val"]),]
+  c(ans, svd_time=t1, total_time=(proc.time() - t0)[[3]])
 }

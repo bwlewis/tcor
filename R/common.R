@@ -1,5 +1,5 @@
-#' linear time longest run search (A. Poliakov), find the longest
-#' run of values in the vector within the specified distance
+#' linear time longest run search: find the longest run of values in the
+#' ordered vector within the specified limit
 #' @param v a vector with entries ordered in increasing order
 #' @param limit distance interval
 #' @return run length
@@ -84,7 +84,7 @@ two_seven = function(A, L, t, filter=c("distributed", "local"), normlim=2 * (1 -
       j = which(d <= normlim)
       n = length(j)
       # return original un-permuted column indices that meet true threshold
-      # (step 7), including the number of possible candidates for info.:
+      # (step 7), and the number of possible candidates:
       if(n == 0)
       {
         ans = vector("list", 2)
@@ -101,7 +101,7 @@ two_seven = function(A, L, t, filter=c("distributed", "local"), normlim=2 * (1 -
     return(c(indices, longest_run=ell, t=t))
   }
 
-# filter == "local" case, preventing copy of the data matrix to the workers
+# The filter == "local" case, preventing copy of the data matrix to the workers
   indices = foreach(i=1:ell, .combine=combine, .inorder=FALSE, .noexport="A") %dopar%
   {
     d = diff(L$v[P, 1:p, drop=FALSE], lag=i) ^ 2 %*% L$d[1:p] ^ 2

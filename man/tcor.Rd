@@ -28,11 +28,14 @@ algorithm when tuning \code{p} (see notes)}
 \item{...}{additional arguments passed to \code{\link{irlba}}}
 }
 \value{
-If \code{dry_run=FALSE}, return a list with elements:
+A list with elements:
 \enumerate{
   \item \code{indices} A three-column matrix. The first two columns contain
         indices of vectors meeting the correlation threshold \code{t},
-        the third column contains the corresponding correlation value.
+        the third column contains the corresponding correlation value
+        (not returned when \code{dry_run=TRUE}).
+  \item \code{restart} The truncated SVD from \code{\link{irlba}}, used to restart
+  the \code{irlba} algorithm (only returned when \code{dry_run=TRUE}).
   \item \code{longest_run} The largest number of successive entries in the
     ordered first singular vector within a projected distance defined by the
     correlation threshold. This is the minimum number of \code{n * p} matrix-vector
@@ -43,21 +46,6 @@ If \code{dry_run=FALSE}, return a list with elements:
   \item \code{t} The threshold value.
   \item \code{svd_time} Time spent computing truncated SVD.
   \item \code{total_time} Total run time.
-}
-
-When \code{dry_RUN=TRUE}, return a list with elements:
-\enumerate{
-  \item \code{restart} The truncated SVD from \code{\link{irlba}}, used to restart
-  the \code{irlba} algorithm.
-  \item \code{longest_run} The largest number of successive entries in the
-    ordered first singular vector within a projected distance defined by the
-    correlation threshold. This is the main number of \code{n * p} matrix-vector
-    products required by the algorithm.
-  \item \code{n} A cheap lower-bound estimate of the total number of _candidate_ vectors that met
-    the correlation threshold identified by the algorithm, subsequently filtered
-    down to just those indices corresponding to values meeting the threshold.
-  \item \code{t} The threshold value.
-  \item \code{svd_time} Time spent computing truncated SVD.
 }
 }
 \description{
@@ -81,9 +69,9 @@ fully recomputing a truncated SVD. Use these options to tune \code{p} for a bala
 the matrix-vector product work and pruning efficiency.
 }
 \examples{
-# Construct a 100 x 5,000 example matrix A:
+# Construct a 100 x 2,000 example matrix A:
 set.seed(1)
-s <- svd(matrix(rnorm(100 * 5000), nrow=100))
+s <- svd(matrix(rnorm(100 * 2000), nrow=100))
 A <- s$u \%*\% (1/(1:100) * t(s$v)) 
 
 C <- cor(A)

@@ -18,11 +18,14 @@
 #' algorithm when tuning \code{p} (see notes)
 #' @param ... additional arguments passed to \code{\link{irlba}}
 #'
-#' @return If \code{dry_run=FALSE}, return a list with elements:
+#' @return A list with elements:
 #' \enumerate{
 #'   \item \code{indices} A three-column matrix. The first two columns contain
 #'         indices of vectors meeting the correlation threshold \code{t},
-#'         the third column contains the corresponding correlation value.
+#'         the third column contains the corresponding correlation value
+#'         (not returned when \code{dry_run=TRUE}).
+#'   \item \code{restart} The truncated SVD from \code{\link{irlba}}, used to restart
+#'   the \code{irlba} algorithm (only returned when \code{dry_run=TRUE}).
 #'   \item \code{longest_run} The largest number of successive entries in the
 #'     ordered first singular vector within a projected distance defined by the
 #'     correlation threshold. This is the minimum number of \code{n * p} matrix-vector
@@ -33,21 +36,6 @@
 #'   \item \code{t} The threshold value.
 #'   \item \code{svd_time} Time spent computing truncated SVD.
 #'   \item \code{total_time} Total run time.
-#' }
-#'
-#' When \code{dry_RUN=TRUE}, return a list with elements:
-#' \enumerate{
-#'   \item \code{restart} The truncated SVD from \code{\link{irlba}}, used to restart
-#'   the \code{irlba} algorithm.
-#'   \item \code{longest_run} The largest number of successive entries in the
-#'     ordered first singular vector within a projected distance defined by the
-#'     correlation threshold. This is the main number of \code{n * p} matrix-vector
-#'     products required by the algorithm.
-#'   \item \code{n} A cheap lower-bound estimate of the total number of _candidate_ vectors that met
-#'     the correlation threshold identified by the algorithm, subsequently filtered
-#'     down to just those indices corresponding to values meeting the threshold.
-#'   \item \code{t} The threshold value.
-#'   \item \code{svd_time} Time spent computing truncated SVD.
 #' }
 #'
 #' @note Register a parallel backend with \code{\link{foreach}} before invoking \code{\link{tcor}}
@@ -65,25 +53,27 @@
 #'
 #' @seealso \code{\link{cor}}, \code{\link{irlba}}
 #' @examples
-#' # Construct a 100 x 5,000 example matrix A:
+#' # Construct a 100 x 2,000 example matrix A:
 #' set.seed(1)
-#' s <- svd(matrix(rnorm(100 * 5000), nrow=100))
+#' s <- svd(matrix(rnorm(100 * 2000), nrow=100))
 #' A <- s$u %*% (1/(1:100) * t(s$v)) 
 #'
 #' C <- cor(A)
 #' C <- C*upper.tri(C)
-#' i <- which(C >= 0.98, arr.ind=TRUE)
+#' (i <- which(C >= 0.98, arr.ind=TRUE))
 #'
-#' x <- tcor(A, t=0.98)  # Compare x$indices with i.
+#' (x <- tcor(A, t=0.98))  # Compare x$indices with i.
 #'
 #' # Example of tuning p with dry_run=TRUE:
 #' x1 <- tcor(A, t=0.98, p=3, dry_run=TRUE)
 #' print(x1$n)
-#' # 456, see how much we can reduce this without increasing p too much...
-#' x1 <- tcor(A, t=0.98, p=8, dry_run=TRUE, restart=x1)
-#' # 17,  much better...
+#' # 211, see how much we can reduce this without increasing p too much...
+#' x1 <- tcor(A, t=0.98, p=5, dry_run=TRUE, restart=x1)
+#' print(x1$n)
+#' # 39,  much better...
 #' x1 <- tcor(A, t=0.98, p=10, dry_run=TRUE, restart=x1)
-#' # 7,   even better...
+#' print(x1$n)
+#' # 3,   even better...
 #'
 #' # Once tuned, compute the full thresholded correlation:
 #' x <- tcor(A, t=0.98, p=10, restart=x1)

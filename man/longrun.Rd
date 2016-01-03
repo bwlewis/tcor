@@ -2,8 +2,8 @@
 % Please edit documentation in R/common.R
 \name{longrun}
 \alias{longrun}
-\title{linear time longest run search (A. Poliakov), find the longest
-run of values in the vector within the specified distance}
+\title{linear time longest run search: find the longest run of values in the
+ordered vector within the specified limit}
 \usage{
 longrun(v, limit)
 }
@@ -16,8 +16,8 @@ longrun(v, limit)
 run length
 }
 \description{
-linear time longest run search (A. Poliakov), find the longest
-run of values in the vector within the specified distance
+linear time longest run search: find the longest run of values in the
+ordered vector within the specified limit
 }
 \keyword{internal}
 

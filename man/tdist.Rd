@@ -5,12 +5,14 @@
 \title{Thresholded distances between columns of a matrix.}
 \usage{
 tdist(A, t, p = 10, filter = c("distributed", "local"),
-  method = c("euclidean", "manhattan"), dry_run = FALSE, restart, ...)
+  method = c("euclidean", "manhattan", "maximum"), rank = FALSE,
+  dry_run = FALSE, restart, max_iter = 4, ...)
 }
 \arguments{
 \item{A}{an m by n real-valued dense or sparse matrix}
 
-\item{t}{a threshold distance value, if missing an estimate derived from a 1-d SVD projection will be used}
+\item{t}{a threshold distance value either in absolute distance (the default) or rank order (see \code{rank} below);
+if missing an estimate derived from a 1-d SVD projection will be used}
 
 \item{p}{projected subspace dimension}
 
@@ -22,12 +24,19 @@ faster but requires that the data matrix is available (see notes).}
          "euclidean", or "manhattan".
 Any unambiguous substring can be given.}
 
+\item{rank}{when \code{TRUE}, the threshold \code{t} represents the top \code{t}
+closest vectors, otherwise the threshold \code{t} specifies absolute distance; when
+\code{rank=TRUE} then \code{t} must also be specified}
+
 \item{dry_run}{set \code{TRUE} to return statistics and truncated SVD for tuning
 \code{p} (see notes)}
 
 \item{restart}{either output from a previous run of \code{tdist} with \code{dry_run=TRUE},
 or direct output from from \code{\link{irlba}} used to restart the \code{irlba}
 algorithm when tuning \code{p} (see notes)}
+
+\item{max_iter}{when \code{rank=TRUE}, a portion of the algorithm may iterate; this
+number sets the maximum numer of such iterations}
 
 \item{...}{additional arguments passed to \code{\link{irlba}}}
 }
@@ -36,25 +45,34 @@ A list with elements:
 \enumerate{
   \item \code{indices} A three-column matrix. The  first two columns contain
         indices of vectors meeting the distance threshold \code{t},
-        the third column contains the corresponding distance value.
-  \item \code{longest_run} The largest number of successive entries in the
-    ordered first singular vector within a projected distance defined by the
-    correlation threshold.
+        the third column contains the corresponding distance value (not returned
+        when \code{dry_run=TRUE}).
+  \item \code{restart} A truncated SVD returned by the IRLBA used to restart the
+  algorithm (only returned when \code{dry_run=TRUE}).
   \item \code{n} The total number of _possible_ vectors that meet
     the correlation threshold identified by the algorithm.
+  \item \code{longest_run} The largest number of successive entries in the
+    ordered first singular vector within a projected distance defined by the
+    correlation threshold; Equivalently, the number of \code{n * p} matrix
+    vector products employed in the algorithm, not counting the truncated SVD step.
+  \item \code{t} The threshold value.
+  \item \code{svd_time} Time to compute truncated SVD.
   \item \code{total_time} Total run time.
 }
 }
 \description{
 Unlike the \code{\link{dist}} function which computes
 distances between matrix _rows_, \code{tdist} computes distances
-exceeding a threshold between matrix _columns_.
+exceeding a threshold between matrix _columns_ (similarly to the related
+\code{\link{tcor}} function).
 }
 \details{
 Increase p to cut down the total number of candidate pairs evaluated,
 at the expense of costlier truncated SVDs.
-
-This function doesn't work as well generally yet as the \code{\link{tcor}}
-companion function in this package.
+}
+\note{
+When \code{rank=TRUE} the method returns at least the top \code{t} closest
+indices and their distances and possibly more, unless they could not be found within the iteration
+limit \code{max_iter}.
 }
 
