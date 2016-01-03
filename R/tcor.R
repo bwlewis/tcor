@@ -13,6 +13,10 @@
 #'  faster but requires that the data matrix is available (see notes).
 #' @param dry_run set \code{TRUE} to return statistics and truncated SVD for tuning
 #' \code{p} (see notes)
+#' @param rank when \code{TRUE}, the threshold \code{t} represents the top \code{t}
+#' closest vectors, otherwise the threshold \code{t} specifies absolute correlation value
+#' @param max_iter when \code{rank=TRUE}, a portion of the algorithm may iterate; this
+#' number sets the maximum numer of such iterations
 #' @param restart either output from a previous run of \code{tcor} with \code{dry_run=TRUE},
 #' or direct output from from \code{\link{irlba}} used to restart the \code{irlba}
 #' algorithm when tuning \code{p} (see notes)
@@ -51,6 +55,9 @@
 #' fully recomputing a truncated SVD. Use these options to tune \code{p} for a balance between
 #' the matrix-vector product work and pruning efficiency.
 #'
+#' When \code{rank=TRUE}, the method returns at least, and perhaps more than, the top \code{t} most correlated
+#' indices, unless they couldn't be found within \code{max_iter} iterations.
+#'
 #' @seealso \code{\link{cor}}, \code{\link{irlba}}
 #' @examples
 #' # Construct a 100 x 2,000 example matrix A:
@@ -88,7 +95,7 @@
 #' @importFrom irlba irlba
 #' @importFrom stats cor
 #' @export
-tcor = function(A, t=0.99, p=10, filter=c("distributed", "local"), dry_run=FALSE, restart, ...)
+tcor = function(A, t=0.99, p=10, filter=c("distributed", "local"), dry_run=FALSE, rank=FALSE, max_iter=4, restart, ...)
 {
   filter = match.arg(filter)
   if(ncol(A) < p) p = max(1, floor(ncol(A) / 2 - 1))
@@ -105,7 +112,23 @@ tcor = function(A, t=0.99, p=10, filter=c("distributed", "local"), dry_run=FALSE
   }
   t1 = (proc.time() - t0)[[3]]
 
-  ans = two_seven(A, L, t, filter, dry_run=dry_run) # steps 2--7 of algorithm 2.1
-  if(dry_run) return(list(restart=L, longest_run=ans$longest_run, n=ans$n, t=t, svd_time=t1))
+  if(rank)
+  {
+    N = t
+    t = 0.99
+  }
+  iter = 1
+  old_n = 0
+  while(iter <= max_iter)
+  {
+    ans = two_seven(A, L, t, filter, dry_run=dry_run) # steps 2--7 of algorithm 2.1
+    ans$n = old_n + ans$n
+    old_n = ans$n
+    if(dry_run) return(list(restart=L, longest_run=ans$longest_run, n=ans$n, t=t, svd_time=t1))
+    if(!rank || (nrow(ans$indices) >= N)) break
+    iter = iter + 1
+    t = max(t - 0.02, -1)
+  }
+  ans$indices = ans$indices[order(ans$indices[,"val"], decreasing=TRUE),]
   c(ans, svd_time=t1, total_time=(proc.time() - t0)[[3]])
 }

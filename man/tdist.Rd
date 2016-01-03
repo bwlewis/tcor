@@ -2,11 +2,11 @@
 % Please edit documentation in R/tdist.R
 \name{tdist}
 \alias{tdist}
-\title{Thresholded distances between columns of a matrix.}
+\title{Thresholded distances between rows of a matrix.}
 \usage{
 tdist(A, t, p = 10, filter = c("distributed", "local"),
   method = c("euclidean", "manhattan", "maximum"), rank = FALSE,
-  dry_run = FALSE, restart, max_iter = 4, ...)
+  dry_run = FALSE, max_iter = 4, columns = FALSE, restart, ...)
 }
 \arguments{
 \item{A}{an m by n real-valued dense or sparse matrix}
@@ -31,12 +31,15 @@ closest vectors, otherwise the threshold \code{t} specifies absolute distance; w
 \item{dry_run}{set \code{TRUE} to return statistics and truncated SVD for tuning
 \code{p} (see notes)}
 
+\item{max_iter}{when \code{rank=TRUE}, a portion of the algorithm may iterate; this
+number sets the maximum numer of such iterations}
+
+\item{columns}{set to \code{TRUE} to compute distances between matrix columns instead
+of rows, saving the expense of a matrix transpose (which can be significant if \code{A} is large)}
+
 \item{restart}{either output from a previous run of \code{tdist} with \code{dry_run=TRUE},
 or direct output from from \code{\link{irlba}} used to restart the \code{irlba}
 algorithm when tuning \code{p} (see notes)}
-
-\item{max_iter}{when \code{rank=TRUE}, a portion of the algorithm may iterate; this
-number sets the maximum numer of such iterations}
 
 \item{...}{additional arguments passed to \code{\link{irlba}}}
 }
@@ -44,7 +47,7 @@ number sets the maximum numer of such iterations}
 A list with elements:
 \enumerate{
   \item \code{indices} A three-column matrix. The  first two columns contain
-        indices of vectors meeting the distance threshold \code{t},
+        indices of rows meeting the distance threshold \code{t},
         the third column contains the corresponding distance value (not returned
         when \code{dry_run=TRUE}).
   \item \code{restart} A truncated SVD returned by the IRLBA used to restart the
@@ -61,18 +64,29 @@ A list with elements:
 }
 }
 \description{
-Unlike the \code{\link{dist}} function which computes
-distances between matrix _rows_, \code{tdist} computes distances
-exceeding a threshold between matrix _columns_ (similarly to the related
-\code{\link{tcor}} function).
-}
-\details{
+Compute and return distances and indices of rows within a specified distance threshold
+with respect to a specified distance metric. The algorithm works best for Euclidean
+distance (the default option).
+Alternatively compute the \code{t} closest rows when \code{rank=TRUE}. Or use
+\code{columns=TRUE} to compute distances between columns instead, which is somewhat
+cheaper for this algorithm than computing row distances.
 Increase p to cut down the total number of candidate pairs evaluated,
 at the expense of costlier truncated SVDs.
 }
 \note{
-When \code{rank=TRUE} the method returns at least the top \code{t} closest
-indices and their distances and possibly more, unless they could not be found within the iteration
+When \code{rank=TRUE} the method returns at least, and perhaps more than, the top \code{t} closest
+indices and their distances, unless they could not be found within the iteration
 limit \code{max_iter}.
+}
+\examples{
+x <- matrix(rnorm(100*20), nrow=100)
+# Find the top 10 closest vectors with respect to Euclidean distance:
+td <- tdist(x, 10, rank=TRUE)
+print(td$indices[1:10,])
+
+# Compare with distances from `dist`:
+d <- dist(x)
+print(sort(d)[1:10])
+
 }
 

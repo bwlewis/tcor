@@ -5,7 +5,7 @@
 \title{Compute the thresholded correlations between columns of a matrix.}
 \usage{
 tcor(A, t = 0.99, p = 10, filter = c("distributed", "local"),
-  dry_run = FALSE, restart, ...)
+  dry_run = FALSE, rank = FALSE, max_iter = 4, restart, ...)
 }
 \arguments{
 \item{A}{an m by n real-valued dense or sparse matrix}
@@ -20,6 +20,12 @@ faster but requires that the data matrix is available (see notes).}
 
 \item{dry_run}{set \code{TRUE} to return statistics and truncated SVD for tuning
 \code{p} (see notes)}
+
+\item{rank}{when \code{TRUE}, the threshold \code{t} represents the top \code{t}
+closest vectors, otherwise the threshold \code{t} specifies absolute correlation value}
+
+\item{max_iter}{when \code{rank=TRUE}, a portion of the algorithm may iterate; this
+number sets the maximum numer of such iterations}
 
 \item{restart}{either output from a previous run of \code{tcor} with \code{dry_run=TRUE},
 or direct output from from \code{\link{irlba}} used to restart the \code{irlba}
@@ -67,6 +73,9 @@ estimate on the number of unpruned candidate vector pairs to be evaluated by the
 can pass the returned value back in as input using the \code{restart} parameter to avoid
 fully recomputing a truncated SVD. Use these options to tune \code{p} for a balance between
 the matrix-vector product work and pruning efficiency.
+
+When \code{rank=TRUE}, the method returns at least, and perhaps more than, the top \code{t} most correlated
+indices, unless they couldn't be found within \code{max_iter} iterations.
 }
 \examples{
 # Construct a 100 x 2,000 example matrix A:
@@ -76,18 +85,20 @@ A <- s$u \%*\% (1/(1:100) * t(s$v))
 
 C <- cor(A)
 C <- C*upper.tri(C)
-i <- which(C >= 0.98, arr.ind=TRUE)
+(i <- which(C >= 0.98, arr.ind=TRUE))
 
-x <- tcor(A, t=0.98)  # Compare x$indices with i.
+(x <- tcor(A, t=0.98))  # Compare x$indices with i.
 
 # Example of tuning p with dry_run=TRUE:
 x1 <- tcor(A, t=0.98, p=3, dry_run=TRUE)
 print(x1$n)
-# 456, see how much we can reduce this without increasing p too much...
-x1 <- tcor(A, t=0.98, p=8, dry_run=TRUE, restart=x1)
-# 17,  much better...
+# 211, see how much we can reduce this without increasing p too much...
+x1 <- tcor(A, t=0.98, p=5, dry_run=TRUE, restart=x1)
+print(x1$n)
+# 39,  much better...
 x1 <- tcor(A, t=0.98, p=10, dry_run=TRUE, restart=x1)
-# 7,   even better...
+print(x1$n)
+# 3,   even better...
 
 # Once tuned, compute the full thresholded correlation:
 x <- tcor(A, t=0.98, p=10, restart=x1)

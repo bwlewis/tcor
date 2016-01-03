@@ -88,7 +88,8 @@ two_seven = function(A, L, t, filter=c("distributed", "local"), normlim=2 * (1 -
       if(n == 0)
       {
         ans = vector("list", 2)
-        names(ans) = c("idx", "n")
+        names(ans) = c("indices", "n")
+        ans$indices = cbind(i=integer(0), j=integer(0), val=double(0))
         ans$n = n
         return(ans)
       }
