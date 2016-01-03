@@ -16,5 +16,5 @@ Imports:
     irlba (>= 2.0.0),
     stats,
     foreach
-License: GPL
+License: GPL (>= 2)
 RoxygenNote: 5.0.0
