@@ -107,7 +107,7 @@ x <- tcor(A, t=0.98, p=10, restart=x1)
 # Optionally, register a parallel backend first:
 library(doMC)
 registerDoMC()
-x <- tcor(A, t=0.98)  # Compare x$indices with i.
+x <- tcor(A, t=0.98)  # Should now run faster on a multicore machine
 }
 
 }
