@@ -55,6 +55,8 @@
 #' @note When \code{rank=TRUE} the method returns at least, and perhaps more than, the top \code{t} closest
 #' indices and their distances, unless they could not be found within the iteration
 #' limit \code{max_iter}.
+#' @seealso \code{\link{dist}}, \code{\link{tcor}}
+#' @references \url{http://arxiv.org/abs/1512.07246} (preprint)
 #' @examples
 #' x <- matrix(rnorm(100*20), nrow=100)
 #' # Find the top 10 closest vectors with respect to Euclidean distance:

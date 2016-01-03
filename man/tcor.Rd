@@ -111,7 +111,10 @@ x <- tcor(A, t=0.98)  # Compare x$indices with i.
 }
 
 }
+\references{
+\url{http://arxiv.org/abs/1512.07246} (preprint)
+}
 \seealso{
-\code{\link{cor}}, \code{\link{irlba}}
+\code{\link{cor}}, \code{\link{tdist}}
 }
 

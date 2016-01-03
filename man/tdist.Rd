@@ -89,4 +89,10 @@ d <- dist(x)
 print(sort(d)[1:10])
 
 }
+\references{
+\url{http://arxiv.org/abs/1512.07246} (preprint)
+}
+\seealso{
+\code{\link{dist}}, \code{\link{tcor}}
+}
 

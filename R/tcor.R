@@ -58,7 +58,8 @@
 #' When \code{rank=TRUE}, the method returns at least, and perhaps more than, the top \code{t} most correlated
 #' indices, unless they couldn't be found within \code{max_iter} iterations.
 #'
-#' @seealso \code{\link{cor}}, \code{\link{irlba}}
+#' @seealso \code{\link{cor}}, \code{\link{tdist}}
+#' @references \url{http://arxiv.org/abs/1512.07246} (preprint)
 #' @examples
 #' # Construct a 100 x 2,000 example matrix A:
 #' set.seed(1)
