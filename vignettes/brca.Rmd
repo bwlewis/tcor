@@ -194,7 +194,7 @@ devtools::install_github("bwlewis/tcor")
 library(tcor)
 ```
 
-Because we're interested in correlation among the columns (genes), we need to
+Because we're interested in correlation among the columns (gene expression), we need to
 filter out constant-valued columns (including, for example, columns of all zeros):
 ```{r, eval=FALSE}
 brca_tumor_filtered = brca_tumor[, apply(brca_tumor, 2, sd) > 0]
