@@ -10,11 +10,14 @@ Authors@R: c(
     person("Alex", "Poliakov", role=c("aut"), email="apoliakov@paradigm4.com")
     )
 URL: https://github.com/bwlewis/tcor
+VignetteBuilder: knitr
 BugReports: https://github.com/bwlewis/tcor/issues
 Description: Fast and memory efficient computation of thresholded correlation matrices.
 Imports:
     irlba (>= 2.0.0),
     stats,
     foreach
+Suggests:
+    knitr (>= 1.8)
 License: GPL (>= 2)
 RoxygenNote: 5.0.0

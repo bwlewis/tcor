@@ -1,0 +1,275 @@
+---
+title: "Thresholded Correlation of RNASeq Gene Expression Data"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    highlight: kate
+    toc: false
+    toc_depth: 4
+    mathjax: null
+vignette: >
+  %\VignetteIndexEntry{Correlation}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+# Thresholded Correlation of RNASeq Gene Expression Data
+
+We illustrate the use of the `tcor` package to compute a thresholded
+gene expression correlation matrix of gene expression data from the
+Cancer Genome Atlas (TCGA).
+
+TCGA (http://cancergenome.nih.gov/) is a joint effort of the National Cancer
+Institute and the National Human Genome Research Institute. TCGA provides
+curated data and analyses, including large-scale genome sequencing, for
+many cancer tumor types.
+
+The example proceeds in two parts:
+
+1. Downloading RNASeq gene expression data from TCGA and tricks for efficiently reading the data into R
+2. Computing a thresholded gene by gene correlation matrix with `tcor`
+
+## Obtaining and reading the gene expression data
+
+The data for this example are obtained from the Broad Institute's GDAC Firehose
+http://firebrowse.org/?cohort=BRCA&download_dialog=true.  The GDAC provides a
+convenient way to download versioned and standardized TCGA data organized as
+sample by measurement tables in tab delimited text form.
+
+Some of the following steps use Unix-like pipeline processing with shell
+utilities and R's `pipe` function. Windows users may need to install the Rtools
+suite (https://cran.r-project.org/bin/windows/Rtools/).
+
+### Download and decompress the data
+
+We select breast invasive carcinoma gene expression data, one of the larger
+available datasets.  The GDAC dashboard is available at
+http://gdac.broadinstitute.org/. Data may be browsed and manually downloaded
+directly from the dashboard, or downloaded and uncompressed by uncommenting the
+`download.file` and `untar` lines in the script below.
+
+```{r, eval=FALSE}
+url = "http://gdac.broadinstitute.org/runs/stddata__2015_11_01/data/BRCA/20151101/gdac.broadinstitute.org_BRCA.Merge_rnaseq__illuminahiseq_rnaseq__unc_edu__Level_3__gene_expression__data.Level_3.2015110100.0.0.tar.gz"
+destfile = "gdac.broadinstitute.org_BRCA.Merge_rnaseq__illuminahiseq_rnaseq__unc_edu__Level_3__gene_expression__data.Level_3.2015110100.0.0.tar.gz"
+
+# download.file(url, destfile)  # (about 300 MB)
+# untar(destfile)               # (about 600 MB)
+
+# data file name:
+fn = dir(gsub("\\.tar\\.gz", "", destfile), pattern="*.data.txt", full.names=TRUE)
+```
+
+### Efficiently reading the data into R
+
+The data file is a tab-delimited text file with two header lines followed by
+20,532 data lines. Each data line specifies a gene followed by sample
+measurements for that gene in the columns. The measurements include raw counts,
+normalized, and reads per kilobase of transcript per million mapped reads
+(RPKM) values.  We'll use the RPKM-normalized values in this example.
+
+The header lines look like:
+```
+# Hybridiz...   ID1        ID1                       ID1  ID2        ID2                      ID2        ...
+# gene          raw_counts median_length_normalized  RPKM raw_counts median_length_normalized raw_counts ...
+```
+where, `IDn` indicates the nth TCGA barcode ID.
+
+We _could_ simply read these data into R using `read.table`, for example with:
+```{r, eval=FALSE}
+# Simple but not particularly efficient way to read the data...
+id   = unlist(read.table(fn, sep="\t", stringsAsFactors=FALSE, header=FALSE, nrows=1))
+brca = read.table(fn, sep="\t", stringsAsFactors=FALSE, header=FALSE, skip=2)
+# ... now filter out just the gene and RPKM columns...
+```
+But since we're only interested in the RPKM-normalized values that approach
+reads too much from the file. It can be more efficient to skip the columns
+we're not interested in and read in just the gene and RPKM columns.
+
+Instead we can use some the simple but effective shell tool `cut` and the idea
+of pipelines to process the data file to remove all but the gene and RPKM
+columns on the fly as we read it into R. There are two distinct advantages to
+this approach: we read in only what we're interested in (cutting processing
+time and memory consumption), and we employ pipeline-style parallel processing
+to further speed things up, running the column-skipping `cut` process in
+parallel with the data parsing R `read.table` function.
+
+The pipelined processing as described in the last paragraph can use at most two
+CPU cores to process the data (in practice on average somewhat less due to I/O
+and other overhead). Lots of even cheap PCs today have more than two cores,
+and often quite fast storage systems (for example, solid state disk drives).
+We can wring even more performance out of such systems by combining the
+pipeline parallelism with explicit parallel processing using R's myriad
+available parallel processing functions.
+
+The example code below uses Steve Weston's elegant `foreach` framework for
+explicit parallel processing to read the data file in chunks. Chunks are
+processed concurrently using the pipelined parallelism described above: on
+a four-CPU computer this yields four R and four `cat` worker processes
+plus the controlling R process.
+
+Any `foreach` parallel back end can be used for this task. We use the
+Unix-specific `doMC` backend below but Windows users can equivalently use the
+`doParallel` backend. The work can even be distributed across more than one
+computer with `doSNOW`, `doMPI`, or `doRedis` backends (without changing the
+code). The example below runs in under 30 seconds on my inexpensive quad-core
+Athlon home PC.
+
+There are 2,635 columns (878 unique samples) of tab-separated data.  If
+we're interested only in RPKM values, then we want columns 
+1, 4, 7, 10, ..., 2635.
+One efficient way to get just the columns of interest uses an external
+shell pipeline (FYI that's a TAB character, not a space, in the 'cut' invocation;
+on many computers you can get a tab character by pressing CTRL+V followed by TAB).
+
+```{r, eval=FALSE}
+h = 2       # total header lines in the data file
+N = 20534   # total number of lines in the data file
+
+command = sprintf("cat %s | cut -d '	' -f %s", fn, paste(c(1,seq(from=4, to=2635, by=3)), collapse=","))
+
+# Read the first header line of sample IDs:
+f = pipe(sprintf("%s | head -n 1", command), open="r")
+id = unlist(read.table(f, sep="\t", stringsAsFactors=FALSE, header=FALSE, nrows=1))
+id[1] = "gene"
+close(f)
+
+# Read the rest of the file in parallel.
+library(doMC)
+cores = 4
+registerDoMC(cores)
+block = floor((N - h)/cores)
+
+brca = foreach(j=1:cores, .combine=rbind) %dopar%
+{
+  skip = block * (j - 1) + h + 1
+  nrows = ifelse(j == cores, -1, block)
+  f = pipe(sprintf("%s | tail -n +%.0f", command, skip), open="r")
+  on.exit(close(f))
+  read.table(f, sep="\t", stringsAsFactors=FALSE, header=FALSE, nrows=nrows)
+}
+
+# Finally, label the variables we've just read in using the TCGA sample IDs.
+names(brca) = id
+```
+
+Once finished, we have a data frame named `brca` with 20,532 rows and 879
+columns. The first column contains gene names, the rest contain sample
+RPKM values. The data frame column names include the TCGA barcode sample
+IDs.
+
+See https://wiki.nci.nih.gov/display/TCGA/TCGA+barcode for help understanding
+the TCGA barcode, a sequence of dash separated identifiers. In particular,
+the fourth identifier (sample/vial) indicates if the sample comes from normal
+tissue, solid tumor, or elsewhere, as described in
+https://tcga-data.nci.nih.gov/datareports/codeTablesReport.htm?codeTable=sample%20type.
+Let's say that we're interested in just solid tumor samples, coded as 01.
+We can identify columns associated with tumor, metastatic, and normal tissue
+samples by:
+```{r, eval=FALSE}
+tumor      = grep("^....-..-....-01.-...-....-..", names(brca))
+normal     = grep("^....-..-....-11.-...-....-..", names(brca))
+metastatic = grep("^....-..-....-06.-...-....-..", names(brca))
+```
+
+The next step of our example computes a thresholded gene correlation matrices
+and works with data in matrix form, not data frames. The final step in this
+section assembles two matrices corresponding to tumor and normal samples:
+```{r, eval=FALSE}
+brca_tumor = t(as.matrix(brca[, tumor]))
+brca_normal = t(as.matrix(brca[, normal]))
+colnames(brca_tumor) = brca$gene   # gene names for reference
+colnames(brca_normal) = brca$gene  # gene names for reference
+
+print(dim(brca_tumor))
+print(dim(brca_normal))
+```
+
+
+## Efficient computation of thresholded correlation matrices with tcor
+
+The tcor package (https://github.com/bwlewis/tcor, and companion preprint paper
+http://arxiv.org/abs/1512.07246) provides an implementation of the a new
+algorithm for fast and efficient thresholded correlation.
+You can install the development version of the R package directly from GitHub with
+```{r, eval=FALSE}
+devtools::install_github("bwlewis/tcor")
+library(tcor)
+```
+
+Because we're interested in correlation among the columns (genes), we need to
+filter out constant-valued columns (including, for example, columns of all zeros):
+```{r, eval=FALSE}
+brca_tumor_filtered = brca_tumor[, apply(brca_tumor, 2, sd) > 0]
+brca_normal_filtered = brca_normal[, apply(brca_normal, 2, sd) > 0]
+```
+
+Let's find all pairs of gene expression vectors  among the filtered tumor data
+with correlation values at least 0.99:
+```{r, eval=FALSE}
+tumor_cor = tcor(brca_tumor_filtered, t=0.99)
+str(tumor_cor)
+```
+```{r, eval=FALSE}
+List of 6
+ $ indices    : num [1:135, 1:3] 4319 3572 5289 9383 9383 ...
+  ..- attr(*, "dimnames")=List of 2
+  .. ..$ : NULL
+  .. ..$ : chr [1:3] "i" "j" "val"
+ $ n          : num(0) 
+ $ longest_run: num 5467
+ $ t          : num 0.99
+ $ svd_time   : num 4.64
+ $ total_time : num 33.1
+```
+
+The `tcor` function found 529 such correlated gene expression vectors (out of a
+total 20522^2 = 421,152,484 possible gene pairs) in about 35 seconds on my
+quad-core home PC.  We can translate the listed matrix column indices into more
+easily readable gene names with, for example:
+```{r, eval=FALSE}
+tumor = data.frame(i=colnames(brca_tumor_filtered)[tumor_cor$indices[,1]],
+                   j=colnames(brca_tumor_filtered)[tumor_cor$indices[,2]],
+                   val=tumor_cor$indices[,3])
+head(tumor)
+```
+```{r, eval=FALSE}
+               i                j       val
+1 CSN1S2A|286828          GC|2638 0.9998493
+2       CEL|1056        CELP|1057 0.9996946
+3     DUX4|22947 LOC653544|653544 0.9996464
+4     LALBA|3906   CSN1S2A|286828 0.9992465
+5     LALBA|3906          GC|2638 0.9990847
+6       CKM|1158        MYH7|4625 0.9990631
+```
+We can verify the result by explicitly computing a full correlation matrix,
+but this takes a lot longer and uses much more memory (270 seconds and 6 GB
+on my PC):
+```{r, eval=FALSE}
+# Uncomment the following lines if you want to run the full correlation
+# for comparison...
+
+# C = cor(brca_tumor_filtered)
+# sum(C[upper.tri(C)] >= 0.99)
+# (You will get 529, same as computed above with tcor.)
+```
+
+
+We can similarly identify the 20,331 pairs of correlated gene expression
+vectors for the normal samples (in about 17 seconds on my PC):
+```{r, eval=FALSE}
+normal_cor = tcor(brca_normal_filtered, t=0.99)
+str(normal_cor)
+normal = data.frame(i=colnames(brca_normal_filtered)[normal_cor$indices[,1]],
+                    j=colnames(brca_normal_filtered)[normal_cor$indices[,2]],
+                    val=normal_cor$indices[,3])
+head(normal)
+```
+```{r, eval=FALSE}
+                      i                     j val
+1          OR1S1|219959          LELP1|149018   1
+2          LELP1|149018          OR9K2|441639   1
+3          OR5M3|219482 SNORD115-10|100033447   1
+4 SNORD115-10|100033447         OR4C46|119749   1
+5          OR5T2|219464          OR8D4|338662   1
+6          OR8D4|338662          OR2M5|127059   1
+```
