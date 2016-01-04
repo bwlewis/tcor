@@ -161,7 +161,6 @@ the TCGA barcode, a sequence of dash separated identifiers. In particular,
 the fourth identifier (sample/vial) indicates if the sample comes from normal
 tissue, solid tumor, or elsewhere, as described in
 https://tcga-data.nci.nih.gov/datareports/codeTablesReport.htm?codeTable=sample%20type.
-Let's say that we're interested in just solid tumor samples, coded as 01.
 We can identify columns associated with tumor, metastatic, and normal tissue
 samples by:
 ```{r, eval=FALSE}
@@ -170,7 +169,7 @@ normal     = grep("^....-..-....-11.-...-....-..", names(brca))
 metastatic = grep("^....-..-....-06.-...-....-..", names(brca))
 ```
 
-The next step of our example computes a thresholded gene correlation matrices
+The next step of our example computes thresholded gene correlation matrices
 and works with data in matrix form, not data frames. The final step in this
 section assembles two matrices corresponding to tumor and normal samples:
 ```{r, eval=FALSE}
