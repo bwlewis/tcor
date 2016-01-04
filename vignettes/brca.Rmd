@@ -118,14 +118,13 @@ There are 2,635 columns (878 unique samples) of tab-separated data.  If
 we're interested only in RPKM values, then we want columns 
 1, 4, 7, 10, ..., 2635.
 One efficient way to get just the columns of interest uses an external
-shell pipeline (FYI that's a TAB character, not a space, in the 'cut' invocation;
-on many computers you can get a tab character by pressing CTRL+V followed by TAB).
+shell pipeline.
 
 ```{r, eval=FALSE}
 h = 2       # total header lines in the data file
 N = 20534   # total number of lines in the data file
 
-command = sprintf("cat %s | cut -d '	' -f %s", fn, paste(c(1,seq(from=4, to=2635, by=3)), collapse=","))
+command = sprintf("cat %s | cut -d$'\t' -f %s", fn, paste(c(1,seq(from=4, to=2635, by=3)), collapse=","))
 
 # Read the first header line of sample IDs:
 f = pipe(sprintf("%s | head -n 1", command), open="r")

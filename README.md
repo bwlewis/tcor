@@ -21,3 +21,9 @@ The algorithm can optionally make use of `foreach` parallel "back-ends." Many
 are available, including `doMC`, `doParallel`, and `doRedis`. See the CRAN high
 performance computing task view for more info
 https://cran.r-project.org/web/views/HighPerformanceComputing.html.
+
+## Example
+
+See the vignette https://github.com/bwlewis/tcor/blob/master/vignettes/brca.Rmd
+for an example that uses tcor to compute the most correlated gene expression
+vectors from TCGA RNASeq data.
