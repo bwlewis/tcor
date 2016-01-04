@@ -77,6 +77,7 @@ where, `IDn` indicates the nth TCGA barcode ID.
 We _could_ simply read these data into R using `read.table`, for example with:
 ```{r, eval=FALSE}
 # Simple but not particularly efficient way to read the data...
+# (Don't run this, continue reading instead...)
 id   = unlist(read.table(fn, sep="\t", stringsAsFactors=FALSE, header=FALSE, nrows=1))
 brca = read.table(fn, sep="\t", stringsAsFactors=FALSE, header=FALSE, skip=2)
 # ... now filter out just the gene and RPKM columns...
