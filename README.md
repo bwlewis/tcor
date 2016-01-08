@@ -2,7 +2,7 @@
 An R package for fast and memory-efficient computation of thresholded correlation matrices
 
 A preprint of the companion note is available from http://arxiv.org/abs/1512.07246
-(a version of this article has been submitted to the Journal of Statistical Software).
+(the article is being revised, we found some cool related references that we're adding...)
 
 
 ## Installation
