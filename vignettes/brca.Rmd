@@ -240,13 +240,13 @@ tumor = data.frame(i=colnames(brca_tumor_filtered)[tumor_cor$indices[,1]],
 head(tumor)
 ```
 ```
-               i                j       val
-1 CSN1S2A|286828          GC|2638 0.9998493
-2       CEL|1056        CELP|1057 0.9996946
-3     DUX4|22947 LOC653544|653544 0.9996464
-4     LALBA|3906   CSN1S2A|286828 0.9992465
-5     LALBA|3906          GC|2638 0.9990847
-6       CKM|1158        MYH7|4625 0.9990631
+                     i                j       val
+1 SNORD115-2|100033437 KRTAP20-3|337985 1.0000000
+2      INS-IGF2|723961        IGF2|3481 0.9999759
+3       CSN1S2A|286828        CSN2|1447 0.9999411
+4              GC|2638   CSN1S2A|286828 0.9998493
+5              GC|2638        CSN2|1447 0.9997900
+6            NRAP|4892       CSRP3|8048 0.9997411
 ```
 We can verify the result by explicitly computing a full correlation matrix,
 but this takes a lot longer and uses much more memory (270 seconds and 6 GB
