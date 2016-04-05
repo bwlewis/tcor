@@ -1,8 +1,8 @@
 Package: tcor
 Type: Package
 Title: Fast Thresholded Correlation and Distance Matrices
-Version: 0.0.0
-Date: 2015-11-27
+Version: 0.1.0
+Date: 2016-04-03
 Authors@R: c(
     person("B. W.", "Lewis", role=c("cre","aut"), email="blewis@illposed.net"),
     person("James", "Baglama", role=c("aut"), email="jbaglama@math.uri.edu"),
@@ -12,7 +12,8 @@ Authors@R: c(
 URL: https://github.com/bwlewis/tcor
 VignetteBuilder: knitr
 BugReports: https://github.com/bwlewis/tcor/issues
-Description: Fast and memory efficient computation of thresholded correlation matrices.
+Description: Fast and memory efficient computation of thresholded correlation
+    matrices.
 Imports:
     irlba (>= 2.0.0),
     stats,
@@ -20,4 +21,4 @@ Imports:
 Suggests:
     knitr (>= 1.8)
 License: GPL (>= 2)
-RoxygenNote: 5.0.0
+RoxygenNote: 5.0.1

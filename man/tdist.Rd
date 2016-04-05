@@ -79,10 +79,10 @@ indices and their distances, unless they could not be found within the iteration
 limit \code{max_iter}.
 }
 \examples{
-x <- matrix(rnorm(100*20), nrow=100)
+x <- matrix(rnorm(100 * 20), nrow=100)
 # Find the top 10 closest vectors with respect to Euclidean distance:
 td <- tdist(x, 10, rank=TRUE)
-print(td$indices[1:10,])
+print(td$indices[1:10, ])
 
 # Compare with distances from `dist`:
 d <- dist(x)

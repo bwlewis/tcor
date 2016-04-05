@@ -10,7 +10,7 @@
 #' @param p projected subspace dimension, p << n (if p >= n it will be reduced)
 #' @param filter "local" filters candidate set sequentially,
 #'  "distributed" computes thresholded correlations in a parallel code section which can be
-#'  faster but requires that the data matrix is available (see notes).
+#'  faster but requires the data matrix (see notes).
 #' @param dry_run set \code{TRUE} to return statistics and truncated SVD for tuning
 #' \code{p} (see notes)
 #' @param rank when \code{TRUE}, the threshold \code{t} represents the top \code{t}
@@ -44,7 +44,7 @@
 #'
 #' @note Register a parallel backend with \code{\link{foreach}} before invoking \code{\link{tcor}}
 #' to run in parallel, otherwise it runs sequentially.
-#' When \code{A} is large, use \code{filter=local} to avoid copying A on the
+#' When \code{A} is large, use \code{filter=local} to avoid copying A to the
 #' parallel R worker processes (unless the \code{doMC} parallel backend is used with
 #' \code{\link{foreach}}).
 #'
@@ -64,10 +64,10 @@
 #' # Construct a 100 x 2,000 example matrix A:
 #' set.seed(1)
 #' s <- svd(matrix(rnorm(100 * 2000), nrow=100))
-#' A <- s$u %*% (1/(1:100) * t(s$v)) 
+#' A <- s$u %*% (1 /( 1:100) * t(s$v)) 
 #'
 #' C <- cor(A)
-#' C <- C*upper.tri(C)
+#' C <- C * upper.tri(C)
 #' (i <- which(C >= 0.98, arr.ind=TRUE))
 #'
 #' (x <- tcor(A, t=0.98))  # Compare x$indices with i.

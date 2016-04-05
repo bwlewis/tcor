@@ -58,17 +58,17 @@
 #' @seealso \code{\link{dist}}, \code{\link{tcor}}
 #' @references \url{http://arxiv.org/abs/1512.07246} (preprint)
 #' @examples
-#' x <- matrix(rnorm(100*20), nrow=100)
+#' x <- matrix(rnorm(100 * 20), nrow=100)
 #' # Find the top 10 closest vectors with respect to Euclidean distance:
 #' td <- tdist(x, 10, rank=TRUE)
-#' print(td$indices[1:10,])
+#' print(td$indices[1:10, ])
 #'
 #' # Compare with distances from `dist`:
 #' d <- dist(x)
 #' print(sort(d)[1:10])
 #'
 #' @importFrom irlba irlba
-#' @importFrom stats dist
+#' @importFrom stats dist quantile
 #' @export
 tdist = function(A, t, p=10,
                  filter=c("distributed", "local"),
