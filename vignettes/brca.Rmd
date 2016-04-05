@@ -45,15 +45,15 @@ suite (https://cran.r-project.org/bin/windows/Rtools/).
 We select breast invasive carcinoma gene expression data, one of the larger
 available datasets.  The GDAC dashboard is available at
 http://gdac.broadinstitute.org/. Data may be browsed and manually downloaded
-directly from the dashboard, or downloaded and uncompressed by uncommenting the
+directly from the dashboard, or downloaded and uncompressed using the
 `download.file` and `untar` lines in the script below.
 
 ```{r, eval=FALSE}
 url = "http://gdac.broadinstitute.org/runs/stddata__2015_11_01/data/BRCA/20151101/gdac.broadinstitute.org_BRCA.Merge_rnaseq__illuminahiseq_rnaseq__unc_edu__Level_3__gene_expression__data.Level_3.2015110100.0.0.tar.gz"
 destfile = "gdac.broadinstitute.org_BRCA.Merge_rnaseq__illuminahiseq_rnaseq__unc_edu__Level_3__gene_expression__data.Level_3.2015110100.0.0.tar.gz"
 
-# download.file(url, destfile)  # (about 300 MB)
-# untar(destfile)               # (about 600 MB)
+download.file(url, destfile)  # (about 300 MB)
+untar(destfile)               # (about 600 MB)
 
 # data file name:
 fn = dir(gsub("\\.tar\\.gz", "", destfile), pattern="*.data.txt", full.names=TRUE)
