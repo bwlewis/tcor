@@ -9,7 +9,7 @@ Authors@R: c(
     person("Michael", "Kane", role=c("aut"), email="michael.kane@yale.edu"),
     person("Alex", "Poliakov", role=c("aut"), email="apoliakov@paradigm4.com")
     )
-URL: https://github.com/bwlewis/tcor
+URL: https://github.com/bwlewis/tcor, http://arxiv.org/abs/1512.07246
 VignetteBuilder: knitr
 BugReports: https://github.com/bwlewis/tcor/issues
 Description: Fast and memory efficient computation of thresholded correlation
