@@ -7,7 +7,7 @@
 two_seven(A, L, t, filter = c("distributed", "local"), normlim = 2 * (1 -
   t), full_dist_fun = function(idx) vapply(1:nrow(idx), function(k) cor(A[,
   idx[k, 1]], A[, idx[k, 2]]), 1), filter_fun = function(v, t) v >= t,
-  dry_run = FALSE)
+  dry_run = FALSE, anti = FALSE)
 }
 \arguments{
 \item{A}{data matrix}
@@ -25,10 +25,12 @@ two_seven(A, L, t, filter = c("distributed", "local"), normlim = 2 * (1 -
 \item{filter_fun}{filter function of a vector and scalar that thresholds vector values from full_dist_fun, returning a logical vector of same length as v (step 7), default function is for correlation}
 
 \item{dry_run}{a logical value, if \code{TRUE} quickly return statistics useful for tuning \code{p}}
+
+\item{anti}{a logical value, if \code{TRUE} also include anti-correlated vectors}
 }
 \value{
-a list with indices, ell, n, and longest_run entries, unless dry_run=\code{TRUE} in which case
-a list with ell and n is returned
+a list with indices, ell, tot, and longest_run entries, unless dry_run=\code{TRUE} in which case
+a list with ell and tot is returned
 }
 \description{
 Steps 2--7 of Algorithm 2.1, factored into a common function that can be used by a variety of distance metrics

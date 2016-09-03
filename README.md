@@ -16,9 +16,9 @@ You can install `tcor` using the `devtools` package
 devtools::install_github("bwlewis/tcor")
 ```
 
-The algorithm can optionally make use of `foreach` parallel "back-ends." Many
-are available, including `doMC`, `doParallel`, and `doRedis`. See the CRAN high
-performance computing task view for more info
+The algorithm can optionally make use of `foreach` package "back-ends" to run
+in parallel Many are available, including `doMC`, `doParallel`, and `doRedis`.
+See the CRAN high performance computing task view for more info
 https://cran.r-project.org/web/views/HighPerformanceComputing.html.
 
 ## Example

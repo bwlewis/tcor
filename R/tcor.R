@@ -8,6 +8,7 @@
 #' @param A an m by n real-valued dense or sparse matrix
 #' @param t a threshold value for correlation, -1 < t < 1, but usually t is near 1 (the method only finds highly correlated pairs)
 #' @param p projected subspace dimension, p << n (if p >= n it will be reduced)
+#' @param include_anti logical value, if \code{TRUE} then return both correlated and anti-correlated values that meet the threshold in absolute value
 #' @param filter "local" filters candidate set sequentially,
 #'  "distributed" computes thresholded correlations in a parallel code section which can be
 #'  faster but requires the data matrix (see notes).
@@ -34,7 +35,7 @@
 #'     ordered first singular vector within a projected distance defined by the
 #'     correlation threshold. This is the minimum number of \code{n * p} matrix-vector
 #'     products required by the algorithm.
-#'   \item \code{n} The total number of _candidate_ vectors that met
+#'   \item \code{tot} The total number of _candidate_ vectors that met
 #'     the correlation threshold identified by the algorithm, subsequently filtered
 #'     down to just those indices corresponding to values meeting the threshold.
 #'   \item \code{t} The threshold value.
@@ -68,20 +69,24 @@
 #'
 #' C <- cor(A)
 #' C <- C * upper.tri(C)
+#' Compare i with x$indices below:
 #' (i <- which(C >= 0.98, arr.ind=TRUE))
+#' (x <- tcor(A, t=0.98))
 #'
-#' (x <- tcor(A, t=0.98))  # Compare x$indices with i.
+#' # Same example with thresholded correlation _and_ anticorrelation
+#' (i <- which(abs(C) >= 0.98, arr.ind=TRUE))
+#' (x <- tcor(A, t=0.98, include_anti=TRUE))
 #'
 #' # Example of tuning p with dry_run=TRUE:
 #' x1 <- tcor(A, t=0.98, p=3, dry_run=TRUE)
-#' print(x1$n)
+#' print(x1$tot)
 #' # 211, see how much we can reduce this without increasing p too much...
 #' x1 <- tcor(A, t=0.98, p=5, dry_run=TRUE, restart=x1)
-#' print(x1$n)
+#' print(x1$tot)
 #' # 39,  much better...
 #' x1 <- tcor(A, t=0.98, p=10, dry_run=TRUE, restart=x1)
-#' print(x1$n)
-#' # 3,   even better...
+#' print(x1$tot)
+#' # 3,   even better!
 #'
 #' # Once tuned, compute the full thresholded correlation:
 #' x <- tcor(A, t=0.98, p=10, restart=x1)
@@ -96,13 +101,16 @@
 #' @importFrom irlba irlba
 #' @importFrom stats cor
 #' @export
-tcor = function(A, t=0.99, p=10, filter=c("distributed", "local"), dry_run=FALSE, rank=FALSE, max_iter=4, restart, ...)
+tcor = function(A, t=0.99, p=10, include_anti=FALSE, filter=c("distributed", "local"),
+                dry_run=FALSE, rank=FALSE, max_iter=4, restart, ...)
 {
   filter = match.arg(filter)
   if(ncol(A) < p) p = max(1, floor(ncol(A) / 2 - 1))
   t0 = proc.time()
   mu = colMeans(A)
   s  = sqrt(apply(A, 2, crossprod) - nrow(A) * mu ^ 2) # col norms of centered matrix
+  if(include_anti) filter_fun = function(v, t) abs(v) >= t
+  else filter_fun = function(v, t) v >= t
   if(any(s < 10 * .Machine$double.eps)) stop("the standard deviation is zero for some columns")
   if(missing(restart)) L  = irlba(A, p, center=mu, scale=s, ...)
   else
@@ -122,10 +130,10 @@ tcor = function(A, t=0.99, p=10, filter=c("distributed", "local"), dry_run=FALSE
   old_n = 0
   while(iter <= max_iter)
   {
-    ans = two_seven(A, L, t, filter, dry_run=dry_run) # steps 2--7 of algorithm 2.1
-    ans$n = old_n + ans$n
-    old_n = ans$n
-    if(dry_run) return(list(restart=L, longest_run=ans$longest_run, n=ans$n, t=t, svd_time=t1))
+    ans = two_seven(A, L, t, filter, dry_run=dry_run, filter_fun=filter_fun, anti=include_anti) # steps 2--7 of algorithm 2.1
+    ans$tot = old_n + ans$tot
+    old_n = ans$tot
+    if(dry_run) return(list(restart=L, longest_run=ans$longest_run, tot=ans$tot, t=t, svd_time=t1))
     if(!rank || (nrow(ans$indices) >= N)) break
     iter = iter + 1
     t = max(t - 0.02, -1)

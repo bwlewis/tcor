@@ -52,7 +52,7 @@ A list with elements:
         when \code{dry_run=TRUE}).
   \item \code{restart} A truncated SVD returned by the IRLBA used to restart the
   algorithm (only returned when \code{dry_run=TRUE}).
-  \item \code{n} The total number of _possible_ vectors that meet
+  \item \code{tot} The total number of _possible_ vectors that meet
     the correlation threshold identified by the algorithm.
   \item \code{longest_run} The largest number of successive entries in the
     ordered first singular vector within a projected distance defined by the

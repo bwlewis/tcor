@@ -41,7 +41,7 @@
 #'         when \code{dry_run=TRUE}).
 #'   \item \code{restart} A truncated SVD returned by the IRLBA used to restart the
 #'   algorithm (only returned when \code{dry_run=TRUE}).
-#'   \item \code{n} The total number of _possible_ vectors that meet
+#'   \item \code{tot} The total number of _possible_ vectors that meet
 #'     the correlation threshold identified by the algorithm.
 #'   \item \code{longest_run} The largest number of successive entries in the
 #'     ordered first singular vector within a projected distance defined by the
@@ -105,7 +105,7 @@ tdist = function(A, t, p=10,
     ts = sort(c(quantile(L$d[1] * (v[-1] - v[1]), probs=c(0.001, 0.01, 0.1)),
               quantile(L$d[1] * (v[length(v)] - v[-length(v)]), probs=c(0.001, 0.01, 0.1))))
     # (that last expression considers two possible SVD bases of different sign)
-    as = lapply(ts, function(t) two_seven(A,L,t,filter,normlim=nlim(t),dry_run=TRUE)$n)
+    as = lapply(ts, function(t) two_seven(A, L, t, filter, normlim=nlim(t), dry_run=TRUE)$tot)
     i = which(as > 0)
     if(length(i) > 0) t = ts[min(i)]
     else t = ts[3]
@@ -126,7 +126,7 @@ tdist = function(A, t, p=10,
   while(iter <= max_iter)
   {
     ans = two_seven(A, L, t, filter, normlim=nlim(t), full_dist_fun=full_dist_fun, filter_fun=filter_fun, dry_run=dry_run)
-    if(dry_run) return(list(restart=L, longest_run=ans$longest_run, n=ans$n, t=t, svd_time=t1))
+    if(dry_run) return(list(restart=L, longest_run=ans$longest_run, tot=ans$tot, t=t, svd_time=t1))
     if(!rank || (nrow(ans$indices) >= N)) break
     iter = iter + 1
 # back off faster as we get closer to avoid too much filtering, at the expense of maybe more iterations

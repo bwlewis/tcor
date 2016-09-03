@@ -30,20 +30,21 @@ longrun = function(v, limit)
 #' @param full_dist_fun non-projected distance function of a two-column matrix of rows of column indices that needs scoped access to A (step 7), default function is for correlation
 #' @param filter_fun filter function of a vector and scalar that thresholds vector values from full_dist_fun, returning a logical vector of same length as v (step 7), default function is for correlation
 #' @param dry_run a logical value, if \code{TRUE} quickly return statistics useful for tuning \code{p}
-#' @return a list with indices, ell, n, and longest_run entries, unless dry_run=\code{TRUE} in which case
-#' a list with ell and n is returned
+#' @param anti a logical value, if \code{TRUE} also include anti-correlated vectors
+#' @return a list with indices, ell, tot, and longest_run entries, unless dry_run=\code{TRUE} in which case
+#' a list with ell and tot is returned
 #' @importFrom foreach foreach %dopar%
 #' @keywords internal
 two_seven = function(A, L, t, filter=c("distributed", "local"), normlim=2 * (1 - t),
                      full_dist_fun=function(idx) vapply(1:nrow(idx), function(k) cor(A[, idx[k,1]], A[, idx[k, 2]]), 1),
-                     filter_fun=function(v, t) v >= t, dry_run=FALSE)
+                     filter_fun=function(v, t) v >= t, dry_run=FALSE, anti=FALSE)
 {
   filter = match.arg(filter)
 # Find the projection among the first few basis vectors with the shortest
 # maximum run length to minimize work in the next step. This is a cheap but
 # usually not very significant optimization.
   p = length(L$d)
-  ells = lapply(1:min(2,p), function(N)
+  ells = lapply(1:min(2, p), function(N)
   {
     P = order(L$v[, N])
     limit = sqrt(normlim) / L$d[N]
@@ -52,13 +53,23 @@ two_seven = function(A, L, t, filter=c("distributed", "local"), normlim=2 * (1 -
   })
   ellmin = which.min(vapply(ells, function(x) x$ell, 1))
   P = ells[[ellmin]]$P
-
   ell = min(ells[[ellmin]]$ell, ncol(A) - 1)
+  eN = ells[[ellmin]]$N
+  elim = ells[[ellmin]]$limit
+
+# In the include anticorrelated case, we can use the same permutation but
+# must possibly increase ell.
+  if(anti)
+  {
+    v2 = c(L$v[, eN], -L$v[, eN])
+    v2 = v2[order(v2)]
+    ell = longrun(v2, sqrt(normlim) / L$d[eN])
+  }
 
   if(dry_run)
   {
     d = diff(L$v[P, 1:p, drop=FALSE], lag=1) ^ 2 %*% L$d[1:p] ^ 2
-    return(list(longest_run=ell, n=sum(d <= normlim), t=t))
+    return(list(longest_run=ell, tot=sum(d <= normlim), t=t))
   }
 
 # The big union in step 4 of algorithm 2.1 follows, combined with step 6 to
@@ -67,37 +78,39 @@ two_seven = function(A, L, t, filter=c("distributed", "local"), normlim=2 * (1 -
 # in parallel.
   combine = function(x, y)
   {
-    list(indices=rbind(x$indices, y$indices), n=x$n + y$n)
+    list(indices=rbind(x$indices, y$indices), tot=x$n + y$n)
   }
 
 # codetools has trouble detecting the foreach variable i below. We define
-# it here to supress CRAN NOTEs and lintr warnings (this is really either
-# a problem in foreach or codetools).
+# it here to supress CRAN NOTEs and lintr warnings (is this really a
+# problem in foreach or codetools?).
   i = 1
 
   if(filter == "distributed")
   {
     indices = foreach(i=1:ell, .combine=combine, .inorder=FALSE) %dopar%
     {
+      d2 = Inf
       d = diff(L$v[P, 1:p, drop=FALSE], lag=i) ^ 2 %*% L$d[1:p] ^ 2
+      if(anti) d2 = diffint(L$v[P, 1:p, drop=FALSE], lag=i, sign=1) ^ 2 %*% L$d[1:p] ^ 2
       # These ordered indices meet the projected threshold:
-      j = which(d <= normlim)
+      j = c(which(d <= normlim), which(d2 <= normlim))
       n = length(j)
       # return original un-permuted column indices that meet true threshold
       # (step 7), and the number of possible candidates:
       if(n == 0)
       {
         ans = vector("list", 2)
-        names(ans) = c("indices", "n")
+        names(ans) = c("indices", "tot")
         ans$indices = cbind(i=integer(0), j=integer(0), val=double(0))
-        ans$n = n
+        ans$tot = n
         return(ans)
       }
       v = full_dist_fun(cbind(P[j], P[j + i]))
       h = filter_fun(v, t)
       j = j[h]
       v = v[h]
-      list(indices=cbind(i=P[j], j=P[j + i], val=v), n=n)
+      list(indices=cbind(i=P[j], j=P[j + i], val=v), tot=n)
     }
     return(c(indices, longest_run=ell, t=t))
   }
@@ -114,14 +127,20 @@ two_seven = function(A, L, t, filter=c("distributed", "local"), normlim=2 * (1 -
     if(n == 0)
     {
       ans = vector("list", 2)
-      names(ans) = c("indices", "n")
-      ans$n = n
+      names(ans) = c("indices", "tot")
+      ans$tot = n
       return(ans)
     }
-    list(indices=cbind(i=P[j], j=P[j + i]), n=n)
+    list(indices=cbind(i=P[j], j=P[j + i]), tot=n)
   }
   v = full_dist_fun(indices$indices)
   h = filter_fun(v, t)
   indices$indices = cbind(indices$indices[h,], val=v[h])
   c(indices, longest_run=ell, t=t)
+}
+
+# replacement for diff that also supports sums
+diffint = function(x, lag=1, sign=-1)
+{
+  tail(x, nrow(x) - lag) + sign * head(x, nrow(x) - lag)
 }

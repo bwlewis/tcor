@@ -4,8 +4,9 @@
 \alias{tcor}
 \title{Compute the thresholded correlations between columns of a matrix}
 \usage{
-tcor(A, t = 0.99, p = 10, filter = c("distributed", "local"),
-  dry_run = FALSE, rank = FALSE, max_iter = 4, restart, ...)
+tcor(A, t = 0.99, p = 10, include_anti = FALSE,
+  filter = c("distributed", "local"), dry_run = FALSE, rank = FALSE,
+  max_iter = 4, restart, ...)
 }
 \arguments{
 \item{A}{an m by n real-valued dense or sparse matrix}
@@ -13,6 +14,8 @@ tcor(A, t = 0.99, p = 10, filter = c("distributed", "local"),
 \item{t}{a threshold value for correlation, -1 < t < 1, but usually t is near 1 (the method only finds highly correlated pairs)}
 
 \item{p}{projected subspace dimension, p << n (if p >= n it will be reduced)}
+
+\item{include_anti}{logical value, if \code{TRUE} then return both correlated and anti-correlated values that meet the threshold in absolute value}
 
 \item{filter}{"local" filters candidate set sequentially,
 "distributed" computes thresholded correlations in a parallel code section which can be
@@ -46,7 +49,7 @@ A list with elements:
     ordered first singular vector within a projected distance defined by the
     correlation threshold. This is the minimum number of \code{n * p} matrix-vector
     products required by the algorithm.
-  \item \code{n} The total number of _candidate_ vectors that met
+  \item \code{tot} The total number of _candidate_ vectors that met
     the correlation threshold identified by the algorithm, subsequently filtered
     down to just those indices corresponding to values meeting the threshold.
   \item \code{t} The threshold value.
@@ -85,20 +88,24 @@ A <- s$u \%*\% (1 /( 1:100) * t(s$v))
 
 C <- cor(A)
 C <- C * upper.tri(C)
+Compare i with x$indices below:
 (i <- which(C >= 0.98, arr.ind=TRUE))
+(x <- tcor(A, t=0.98))
 
-(x <- tcor(A, t=0.98))  # Compare x$indices with i.
+# Same example with thresholded correlation _and_ anticorrelation
+(i <- which(abs(C) >= 0.98, arr.ind=TRUE))
+(x <- tcor(A, t=0.98, include_anti=TRUE))
 
 # Example of tuning p with dry_run=TRUE:
 x1 <- tcor(A, t=0.98, p=3, dry_run=TRUE)
-print(x1$n)
+print(x1$tot)
 # 211, see how much we can reduce this without increasing p too much...
 x1 <- tcor(A, t=0.98, p=5, dry_run=TRUE, restart=x1)
-print(x1$n)
+print(x1$tot)
 # 39,  much better...
 x1 <- tcor(A, t=0.98, p=10, dry_run=TRUE, restart=x1)
-print(x1$n)
-# 3,   even better...
+print(x1$tot)
+# 3,   even better!
 
 # Once tuned, compute the full thresholded correlation:
 x <- tcor(A, t=0.98, p=10, restart=x1)
