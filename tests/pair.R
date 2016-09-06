@@ -1,0 +1,10 @@
+library(tcor)
+set.seed(1)
+x = matrix(rnorm(300), 10)
+y = matrix(rnorm(200), 10)
+x[, 30] = y[, 1] + 1e-1 * runif(10)
+ans1 = tcor(x, y, t=0.7, p=3, filter="local")
+ans2 = tcor(x, y, t=0.7, p=3)
+z = cor(x, y)
+
+stopifnot(all.equal(nrow(ans1$indices), nrow(ans2$indices), sum(z > 0.7)))
