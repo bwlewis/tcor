@@ -2,39 +2,43 @@
 % Please edit documentation in R/tcor.R
 \name{tcor}
 \alias{tcor}
-\title{Compute the thresholded correlations between columns of a matrix}
+\title{Thresholded Correlation}
 \usage{
-tcor(A, t = 0.99, p = 10, include_anti = FALSE,
+tcor(x, y = NULL, t = 0.99, p = 10, include_anti = FALSE,
   filter = c("distributed", "local"), dry_run = FALSE, rank = FALSE,
   max_iter = 4, restart, ...)
 }
 \arguments{
-\item{A}{an m by n real-valued dense or sparse matrix}
+\item{x}{an m by n real-valued dense or sparse matrix}
 
-\item{t}{a threshold value for correlation, -1 < t < 1, but usually t is near 1 (the method only finds highly correlated pairs)}
+\item{y}{\code{NULL} (default) or a matrix with compatible dimensions to \code{x} (same number of rows). The default
+is equivalent to \code{y=x} but more efficient.}
 
-\item{p}{projected subspace dimension, p << n (if p >= n it will be reduced)}
+\item{t}{a threshold value for correlation, -1 < t < 1, but usually t is near 1 (see \code{include_anti} below).}
 
-\item{include_anti}{logical value, if \code{TRUE} then return both correlated and anti-correlated values that meet the threshold in absolute value}
+\item{p}{projected subspace dimension, p << n (if p >= n it will be reduced).}
+
+\item{include_anti}{logical value, if \code{TRUE} then return both correlated
+and anti-correlated values that meet the threshold in absolute value. NB Can be much more expensive when \code{TRUE}.}
 
 \item{filter}{"local" filters candidate set sequentially,
 "distributed" computes thresholded correlations in a parallel code section which can be
 faster but requires the data matrix (see notes).}
 
 \item{dry_run}{set \code{TRUE} to return statistics and truncated SVD for tuning
-\code{p} (see notes)}
+\code{p} (see notes).}
 
 \item{rank}{when \code{TRUE}, the threshold \code{t} represents the top \code{t}
-closest vectors, otherwise the threshold \code{t} specifies absolute correlation value}
+closest vectors, otherwise the threshold \code{t} specifies absolute correlation value.}
 
 \item{max_iter}{when \code{rank=TRUE}, a portion of the algorithm may iterate; this
-number sets the maximum numer of such iterations}
+number sets the maximum numer of such iterations.}
 
 \item{restart}{either output from a previous run of \code{tcor} with \code{dry_run=TRUE},
 or direct output from from \code{\link{irlba}} used to restart the \code{irlba}
-algorithm when tuning \code{p} (see notes)}
+algorithm when tuning \code{p} (see notes).}
 
-\item{...}{additional arguments passed to \code{\link{irlba}}}
+\item{...}{additional arguments passed to \code{\link{irlba}}.}
 }
 \value{
 A list with elements:
@@ -62,6 +66,9 @@ Compute a thresholded correlation matrix, returning vector indices
 and correlation values that exceed the specified threshold \code{t}.
 Increase \code{p} to cut down the total number of candidate pairs evaluated
 at the expense of costlier matrix-vector products. See the notes on tuning \code{p}.
+If \code{y} is a matrix then the thresholded correlations
+between the columns of \code{x} and the columns of \code{y} are computed,
+otherwise the correlation matrix defined by the columns of \code{x} is computed.
 }
 \note{
 Register a parallel backend with \code{\link{foreach}} before invoking \code{\link{tcor}}
@@ -88,7 +95,7 @@ A <- s$u \%*\% (1 /( 1:100) * t(s$v))
 
 C <- cor(A)
 C <- C * upper.tri(C)
-Compare i with x$indices below:
+# Compare i with x$indices below:
 (i <- which(C >= 0.98, arr.ind=TRUE))
 (x <- tcor(A, t=0.98))
 

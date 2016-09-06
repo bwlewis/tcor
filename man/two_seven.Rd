@@ -7,7 +7,7 @@
 two_seven(A, L, t, filter = c("distributed", "local"), normlim = 2 * (1 -
   t), full_dist_fun = function(idx) vapply(1:nrow(idx), function(k) cor(A[,
   idx[k, 1]], A[, idx[k, 2]]), 1), filter_fun = function(v, t) v >= t,
-  dry_run = FALSE, anti = FALSE)
+  dry_run = FALSE, anti = FALSE, group = NULL)
 }
 \arguments{
 \item{A}{data matrix}
@@ -16,17 +16,23 @@ two_seven(A, L, t, filter = c("distributed", "local"), normlim = 2 * (1 -
 
 \item{t}{scalar threshold value}
 
-\item{filter}{"distributed" for full threshold evaluation of pruned set on parallel workers, "local" for sequential evaluation of full threshold of pruned set to avoid copying data matrix.}
+\item{filter}{"distributed" for full threshold evaluation of pruned set on parallel workers,
+"local" for sequential evaluation of full threshold of pruned set to avoid copying data matrix.}
 
 \item{normlim}{the squared norm limit in step 4, default value is for correlation}
 
-\item{full_dist_fun}{non-projected distance function of a two-column matrix of rows of column indices that needs scoped access to A (step 7), default function is for correlation}
+\item{full_dist_fun}{non-projected distance function of a two-column matrix of rows of column
+indices that needs scoped access to A (step 7), default function is for correlation}
 
-\item{filter_fun}{filter function of a vector and scalar that thresholds vector values from full_dist_fun, returning a logical vector of same length as v (step 7), default function is for correlation}
+\item{filter_fun}{filter function of a vector and scalar that thresholds vector values
+from full_dist_fun, returning a logical vector of same length as v (step 7), default function is for correlation}
 
 \item{dry_run}{a logical value, if \code{TRUE} quickly return statistics useful for tuning \code{p}}
 
 \item{anti}{a logical value, if \code{TRUE} also include anti-correlated vectors}
+
+\item{group}{either \code{NULL} for no grouping, or a vector of length \code{ncol(A)} consisting of \code{-1, 1} values
+indicating group membership of the columns.}
 }
 \value{
 a list with indices, ell, tot, and longest_run entries, unless dry_run=\code{TRUE} in which case

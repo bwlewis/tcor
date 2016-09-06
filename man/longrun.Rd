@@ -5,12 +5,14 @@
 \title{linear time longest run search: find the longest run of values in the
 ordered vector within the specified limit}
 \usage{
-longrun(v, limit)
+longrun(v, limit, group = NULL)
 }
 \arguments{
 \item{v}{a vector with entries ordered in increasing order}
 
 \item{limit}{distance interval}
+
+\item{group}{optional vector with entries -1 and 1 corresponding to the group membership of each element in \code{v} (two groups)}
 }
 \value{
 run length

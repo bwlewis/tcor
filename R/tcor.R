@@ -1,27 +1,33 @@
-#' Compute the thresholded correlations between columns of a matrix
+#' Thresholded Correlation
 #'
 #' Compute a thresholded correlation matrix, returning vector indices
 #' and correlation values that exceed the specified threshold \code{t}.
 #' Increase \code{p} to cut down the total number of candidate pairs evaluated
 #' at the expense of costlier matrix-vector products. See the notes on tuning \code{p}.
+#' If \code{y} is a matrix then the thresholded correlations
+#' between the columns of \code{x} and the columns of \code{y} are computed,
+#' otherwise the correlation matrix defined by the columns of \code{x} is computed.
 #'
-#' @param A an m by n real-valued dense or sparse matrix
-#' @param t a threshold value for correlation, -1 < t < 1, but usually t is near 1 (the method only finds highly correlated pairs)
-#' @param p projected subspace dimension, p << n (if p >= n it will be reduced)
-#' @param include_anti logical value, if \code{TRUE} then return both correlated and anti-correlated values that meet the threshold in absolute value
+#' @param x an m by n real-valued dense or sparse matrix
+#' @param y \code{NULL} (default) or a matrix with compatible dimensions to \code{x} (same number of rows). The default
+#' is equivalent to \code{y=x} but more efficient.
+#' @param t a threshold value for correlation, -1 < t < 1, but usually t is near 1 (see \code{include_anti} below).
+#' @param p projected subspace dimension, p << n (if p >= n it will be reduced).
+#' @param include_anti logical value, if \code{TRUE} then return both correlated
+#'        and anti-correlated values that meet the threshold in absolute value. NB Can be much more expensive when \code{TRUE}.
 #' @param filter "local" filters candidate set sequentially,
 #'  "distributed" computes thresholded correlations in a parallel code section which can be
 #'  faster but requires the data matrix (see notes).
 #' @param dry_run set \code{TRUE} to return statistics and truncated SVD for tuning
-#' \code{p} (see notes)
+#' \code{p} (see notes).
 #' @param rank when \code{TRUE}, the threshold \code{t} represents the top \code{t}
-#' closest vectors, otherwise the threshold \code{t} specifies absolute correlation value
+#' closest vectors, otherwise the threshold \code{t} specifies absolute correlation value.
 #' @param max_iter when \code{rank=TRUE}, a portion of the algorithm may iterate; this
-#' number sets the maximum numer of such iterations
+#' number sets the maximum numer of such iterations.
 #' @param restart either output from a previous run of \code{tcor} with \code{dry_run=TRUE},
 #' or direct output from from \code{\link{irlba}} used to restart the \code{irlba}
-#' algorithm when tuning \code{p} (see notes)
-#' @param ... additional arguments passed to \code{\link{irlba}}
+#' algorithm when tuning \code{p} (see notes).
+#' @param ... additional arguments passed to \code{\link{irlba}}.
 #'
 #' @return A list with elements:
 #' \enumerate{
@@ -69,7 +75,7 @@
 #'
 #' C <- cor(A)
 #' C <- C * upper.tri(C)
-#' Compare i with x$indices below:
+#' # Compare i with x$indices below:
 #' (i <- which(C >= 0.98, arr.ind=TRUE))
 #' (x <- tcor(A, t=0.98))
 #'
@@ -101,23 +107,29 @@
 #' @importFrom irlba irlba
 #' @importFrom stats cor
 #' @export
-tcor = function(A, t=0.99, p=10, include_anti=FALSE, filter=c("distributed", "local"),
+tcor = function(x, y=NULL, t=0.99, p=10, include_anti=FALSE, filter=c("distributed", "local"),
                 dry_run=FALSE, rank=FALSE, max_iter=4, restart, ...)
 {
   filter = match.arg(filter)
-  if(ncol(A) < p) p = max(1, floor(ncol(A) / 2 - 1))
+  group = NULL
+  if(!is.null(y))
+  {
+    group = c(rep(1L, ncol(x)), rep(-1L, ncol(y)))
+    x = cbind(x, y) # XXX Future version: custom irlba matrix product instead for large matrices?
+  }
+  if(ncol(x) < p) p = max(1, floor(ncol(x) / 2 - 1))
   t0 = proc.time()
-  mu = colMeans(A)
-  s  = sqrt(apply(A, 2, crossprod) - nrow(A) * mu ^ 2) # col norms of centered matrix
+  mu = colMeans(x)
+  s  = sqrt(apply(x, 2, crossprod) - nrow(x) * mu ^ 2) # col norms of centered matrix
   if(include_anti) filter_fun = function(v, t) abs(v) >= t
   else filter_fun = function(v, t) v >= t
   if(any(s < 10 * .Machine$double.eps)) stop("the standard deviation is zero for some columns")
-  if(missing(restart)) L  = irlba(A, p, center=mu, scale=s, ...)
+  if(missing(restart)) L  = irlba(x, p, center=mu, scale=s, ...)
   else
   {
     # Handle either output from tcor(..., dry_run=TRUE), or direct output from irlba:
     if("restart" %in% names(restart)) restart = restart$restart
-    L = irlba(A, p, center=mu, scale=s, v=restart, ...)
+    L = irlba(x, p, center=mu, scale=s, v=restart, ...)
   }
   t1 = (proc.time() - t0)[[3]]
 
@@ -130,7 +142,8 @@ tcor = function(A, t=0.99, p=10, include_anti=FALSE, filter=c("distributed", "lo
   old_n = 0
   while(iter <= max_iter)
   {
-    ans = two_seven(A, L, t, filter, dry_run=dry_run, filter_fun=filter_fun, anti=include_anti) # steps 2--7 of algorithm 2.1
+# steps 2--7 of algorithm 2.1
+    ans = two_seven(x, L, t, filter, dry_run=dry_run, filter_fun=filter_fun, anti=include_anti, group=group)
     ans$tot = old_n + ans$tot
     old_n = ans$tot
     if(dry_run) return(list(restart=L, longest_run=ans$longest_run, tot=ans$tot, t=t, svd_time=t1))
