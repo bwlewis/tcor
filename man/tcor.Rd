@@ -16,7 +16,9 @@ is equivalent to \code{y=x} but more efficient.}
 
 \item{t}{a threshold value for correlation, -1 < t < 1, but usually t is near 1 (see \code{include_anti} below).}
 
-\item{p}{projected subspace dimension, p << n (if p >= n it will be reduced).}
+\item{p}{projected subspace dimension, p << n (if p >= n it will be reduced)
+(Increase \code{p} to cut down the total number of candidate pairs evaluated.
+at the expense of costlier matrix-vector products. See the notes on tuning \code{p}.)}
 
 \item{include_anti}{logical value, if \code{TRUE} then return both correlated
 and anti-correlated values that meet the threshold in absolute value. NB Can be much more expensive when \code{TRUE}.}
@@ -64,8 +66,6 @@ A list with elements:
 \description{
 Compute a thresholded correlation matrix, returning vector indices
 and correlation values that exceed the specified threshold \code{t}.
-Increase \code{p} to cut down the total number of candidate pairs evaluated
-at the expense of costlier matrix-vector products. See the notes on tuning \code{p}.
 If \code{y} is a matrix then the thresholded correlations
 between the columns of \code{x} and the columns of \code{y} are computed,
 otherwise the correlation matrix defined by the columns of \code{x} is computed.
