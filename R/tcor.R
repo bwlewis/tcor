@@ -106,6 +106,7 @@
 #'
 #' @importFrom irlba irlba
 #' @importFrom stats cor
+#' @importFrom Matrix colMeans
 #' @export
 tcor = function(x, y=NULL, t=0.99, p=10, include_anti=FALSE, filter=c("distributed", "local"),
                 dry_run=FALSE, rank=FALSE, max_iter=4, restart, ...)

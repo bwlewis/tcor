@@ -2,6 +2,7 @@
 
 export(tcor)
 export(tdist)
+importFrom(Matrix,colMeans)
 importFrom(foreach,"%do%")
 importFrom(foreach,"%dopar%")
 importFrom(foreach,foreach)
