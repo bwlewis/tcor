@@ -156,7 +156,7 @@ two_seven = function(A, L, t, filter=c("distributed", "local"), normlim=2 * (1 -
   }
 
 # The filter == "local" case, preventing copy of the data matrix to the workers
-  indices = foreach(i=1:ell, .combine=combine, .inorder=FALSE, .noexport="A") %do% # XXX
+  indices = foreach(i=1:ell, .combine=combine, .inorder=FALSE, .noexport="A") %dopar%
   {
     d2 = Inf
     # restrict focus to candidates from each group (if specified)
