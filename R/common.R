@@ -99,7 +99,7 @@ two_seven = function(A, L, t, filter=c("distributed", "local"), normlim=2 * (1 -
 
   if(filter == "distributed")
   {
-    indices = foreach(i=1:ell, .combine=combine, .inorder=FALSE) %dopar%
+    indices = foreach(i=1:ell, .combine=combine, .inorder=FALSE, .packages=c("tcor", "Matrix")) %dopar%
     {
       d2 = Inf
       # restrict focus to candidates from each group (if specified)
