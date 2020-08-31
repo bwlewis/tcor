@@ -16,8 +16,8 @@ Description: Fast and memory efficient computation of thresholded correlation
     matrices.
 Imports:
     irlba (>= 2.0.0),
-    stats,
-    foreach
+    foreach,
+    stats
 Suggests:
     knitr (>= 1.8)
 License: GPL-3

@@ -87,12 +87,16 @@ tdist = function(A, t, p=10,
                   manhattan   = t ^ 2)        # just bound by 2-norm, not so great either
 
   t0 = proc.time()
-  if(missing(restart)) L  = irlba(A, p, ...)
+  if(p == ncol(A) || p == nrow(A)) L = svd(A)
   else
   {
-    # Handle either output from tcor(..., dry_run=TRUE), or direct output from irlba:
-    if("restart" %in% names(restart)) restart = restart$restart
-    L = irlba(A, p, v=restart, ...)
+    if(missing(restart)) L  = irlba(A, p, ...)
+    else
+    {
+      # Handle either output from tcor(..., dry_run=TRUE), or direct output from irlba:
+      if("restart" %in% names(restart)) restart = restart$restart
+      L = irlba(A, p, v=restart, ...)
+    }
   }
   t1 = (proc.time() - t0)[[3]]
   if(missing(t) && rank) stop("t must be specified when rank=TRUE")
